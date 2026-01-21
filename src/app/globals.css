@@ -1,26 +1,141 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Colors */
+  --color-dark-900: #111111;
+  --color-dark-700: #757575;
+  --color-dark-500: #aaaaaa;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-light-100: #ffffff;
+  --color-light-200: #f5f5f5;
+  --color-light-300: #e5e5e5;
+  --color-light-400: #cccccc;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-green: #007d48;
+  --color-red: #d33918;
+  --color-orange: #d37918;
+
+  /* Font family */
+  --font-jost: "Jost", sans-serif;
+
+  /* Text Styles */
+  --text-heading-1: 72px;
+  --text-heading-1--line-height: 78px;
+  --text-heading-1--font-weight: 700;
+
+  --text-heading-2: 56px;
+  --text-heading-2--line-height: 60px;
+  --text-heading-2--font-weight: 700;
+
+  --text-heading-3: 24px;
+  --text-heading-3--line-height: 30px;
+  --text-heading-3--font-weight: 500;
+
+  --text-lead: 20px;
+  --text-lead--line-height: 28px;
+  --text-lead--font-weight: 500;
+
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-body--font-weight: 400;
+
+  --text-body-medium: 16px;
+  --text-body-medium--line-height: 24px;
+  --text-body-medium--font-weight: 500;
+
+  --text-caption: 14px;
+  --text-caption--line-height: 20px;
+  --text-caption--font-weight: 500;
+
+  --text-footnote: 12px;
+  --text-footnote--line-height: 18px;
+  --text-footnote--font-weight: 400;
+
+  /* Animation Variables */
+  --animate-slow-zoom: slow-zoom 20s infinite alternate;
+  --animate-fade-up: fade-up 0.8s ease-out forwards;
+  --animate-fade-up-delay: fade-up 0.8s ease-out 0.2s forwards;
+  --animate-fade-up-delay-2: fade-up 0.8s ease-out 0.4s forwards;
+  --animate-fade-up-delay-3: fade-up 0.8s ease-out 0.6s forwards;
+} /* This closes the @theme block - ensure this exists! */
+
+/* Define Keyframes outside the @theme block */
+@keyframes slow-zoom {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Base transitions and initial states */
+.animate-fade-up,
+.animate-fade-up-delay,
+.animate-fade-up-delay-2,
+.animate-fade-up-delay-3 {
+  opacity: 0;
+}
+
+/* globals.css */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Hide scrollbar for a truly cinematic look (Optional) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff5e00; /* Use your orange theme color */
+  border-radius: 10px;
+}
+
+@layer base {
+  :root {
+    --dark-900: #0a0a0a;
+    --orange: #ff5e00;
+  }
+}
+
+/* Optional: Smooth link underline effect */
+.nav-link-underline {
+  position: relative;
+}
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: var(--orange);
+  transition: width 0.3s ease;
+}
+.nav-link-underline:hover::after {
+  width: 100%;
 }
