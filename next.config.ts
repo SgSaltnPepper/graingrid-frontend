@@ -1,25 +1,13 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
-        protocol: 'http',
-        hostname: '**',
-      },
-      {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**', // This allows all images from your Cloudinary account
       },
     ],
-    // Fallback for older versions
-    domains: ['localhost', '127.0.0.1'],
-  },
-  // Adding this to see if the config is even loading
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
   },
 };
 
