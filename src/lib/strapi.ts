@@ -1,6 +1,7 @@
 import qs from "qs";
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
+// UPDATE: Default to your Render URL if env var is missing
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'https://graingrid-backend.onrender.com';
 const API_BASE = `${STRAPI_URL}/api`;
 
 // --- Interfaces ---
@@ -72,7 +73,10 @@ async function fetchStrapi(path: string) {
   try {
     const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
     const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) return null;
+    if (!response.ok) {
+        console.error(`Strapi Error: ${response.status} on ${url}`);
+        return null;
+    }
     const json = await response.json();
     return flatten(json);
   } catch (error) {
@@ -89,8 +93,15 @@ export function getStrapiMedia(data: any) {
   } else if (data.url) {
     url = data.url;
   }
+  
   if (!url) return "/placeholder-product.jpg";
-  return url.startsWith("http") ? url : `${STRAPI_URL}${url}`;
+
+  // IMPORTANT: Cloudinary returns absolute URLs (https://res.cloudinary.com...)
+  // so this check will catch them and return them as-is.
+  if (url.startsWith("http")) return url;
+
+  // Fallback for relative paths (should rely on STRAPI_URL)
+  return `${STRAPI_URL}${url}`;
 }
 
 // --- API Methods ---
@@ -146,8 +157,8 @@ export async function getFeaturedProducts(limit = 8): Promise<StrapiProduct[]> {
     const query = qs.stringify({
         populate: { 
           Image: { populate: '*' }, 
-          badges: { populate: '*' },
-          categories: { populate: '*' }
+          badges: { populate: '*' }, 
+          categories: { populate: '*' } 
         },
         filters: { 
           badges: { 

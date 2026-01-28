@@ -137,7 +137,7 @@ export default function Card({
                   }`}
                 >
                   {vImg && vImg !== "/placeholder-product.jpg" ? (
-                    <Image src={vImg} alt={vName} fill className="object-cover" unoptimized />
+                    <Image src={vImg} alt={vName} fill className="object-cover" />
                   ) : (
                     <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold text-zinc-500 uppercase">
                       {vName.substring(0, 2)}

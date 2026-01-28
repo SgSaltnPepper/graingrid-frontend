@@ -2,27 +2,33 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    unoptimized: true, 
+    // unoptimized: true, <-- Removed this for production performance
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      // 1. Allow Cloudinary (Primary storage)
       {
-        protocol: 'http',
-        hostname: 'https://graingrid-backend.onrender.com',
-        port: '1337',
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      // 2. Allow Render Backend (Fallback)
+      {
+        protocol: 'https',
+        hostname: 'graingrid-backend.onrender.com',
         pathname: '/uploads/**',
       },
+      // 3. Keep Localhost for testing
       {
         protocol: 'http',
-        hostname: 'https://graingrid-backend.onrender.com',
+        hostname: 'localhost',
         port: '1337',
         pathname: '/uploads/**',
       },
     ],
   },
-  // Adding this helps if you have CORS issues during development
+  // CORS Headers
   async headers() {
     return [
       {
