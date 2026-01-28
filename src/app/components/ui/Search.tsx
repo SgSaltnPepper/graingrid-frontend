@@ -7,11 +7,19 @@ export default function Search() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  
+  // Local state for the input to keep typing snappy
   const [inputValue, setInputValue] = useState(searchParams.get("query") || "");
   const isInitialMount = useRef(true);
 
   useEffect(() => {
-    // Avoid running on initial render if input is empty
+    // Sync local state if searchParams change externally (e.g., clearing filters)
+    if (!isInitialMount.current) {
+        setInputValue(searchParams.get("query") || "");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
@@ -28,10 +36,10 @@ export default function Search() {
       startTransition(() => {
         router.replace(`/products?${params.toString()}`, { scroll: false });
       });
-    }, 450);
+    }, 500); // 500ms debounce is optimal for API calls
 
     return () => clearTimeout(timer);
-  }, [inputValue, router, searchParams]);
+  }, [inputValue, router]);
 
   return (
     <div className="group relative w-full max-w-lg">
@@ -51,7 +59,7 @@ export default function Search() {
         placeholder="SEARCH COLLECTION..."
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        className="w-full rounded-2xl border border-zinc-200 bg-white py-4 pl-11 pr-11 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none transition-all duration-300"
+        className="w-full rounded-2xl border border-zinc-200 bg-white py-4 pl-11 pr-11 text-[11px] font-black uppercase tracking-[0.2em] text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none transition-all duration-300 shadow-sm focus:shadow-md"
       />
 
       <div className="absolute inset-y-0 right-0 flex items-center pr-3">

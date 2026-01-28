@@ -3,165 +3,166 @@ import qs from "qs";
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'http://localhost:1337';
 const API_BASE = `${STRAPI_URL}/api`;
 
-// --- Types ---
+// --- Interfaces ---
+export type BadgeTone = "orange" | "green" | "red" | "blue" | "purple";
+
 export interface StrapiBadge {
   id: number;
-  documentId: string;
   label: string;
-  tone: 'orange' | 'green' | 'red' | 'blue' | 'purple';
+  tone: BadgeTone;
   isActive: boolean;
 }
 
 export interface StrapiCategory {
   id: number;
   documentId: string;
-  Name: string; 
-  slug?: string;
+  Name: string;
+  CatImage?: any;
 }
 
-export interface StrapiProduct {
+export interface StrapiFAQ {
   id: number;
-  documentId: string;
-  Name: string;
-  Description?: Array<{
-    type: string;
-    children?: Array<{ type: string; text: string }>;
-  }>;
-  Price?: number;
-  createdAt: string;
-  updatedAt: string;
-  publishedAt?: string;
+  Ques: string;
+  Ans: string;
+}
+
+export interface StrapiVariant {
+  id: number;
+  Type: string;
+  Description: string;
+  variantImage?: any;
+  Label?: string; 
+  Value?: string; 
+}
+
+export interface StrapiProduct { 
+  id: number; 
+  documentId: string; 
+  Name: string; 
+  Description?: any; 
+  Price: number; 
   badges?: StrapiBadge[]; 
   categories?: StrapiCategory[]; 
-  Image?: Array<{
-    id: number;
-    url: string;
-    alternativeText?: string;
-    formats?: any;
-  }>;
+  Image?: any; 
+  variants?: StrapiVariant[]; 
+  FAQs?: StrapiFAQ[]; 
 }
 
-export interface StrapiListResponse<T> {
-  data: T[];
-  meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number; }; };
-}
-
-export interface StrapiSingleResponse<T> {
-  data: T; 
-  meta: any;
-}
-
-// --- Fetch Helper ---
-async function strapiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    // Revalidates every hour in production, every second in dev
-    next: { revalidate: process.env.NODE_ENV === 'development' ? 1 : 3600 }, 
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    console.error(`[Strapi Error] ${res.status}:`, JSON.stringify(errorData, null, 2));
-    throw new Error(`Strapi fetch failed: ${res.status}`);
+// --- Robust Flattener ---
+function flatten(data: any): any {
+  if (!data) return null;
+  if (data.data !== undefined) return flatten(data.data);
+  if (Array.isArray(data)) return data.map((item: any) => flatten(item));
+  if (typeof data === 'object' && data !== null) {
+    const id = data.id;
+    const documentId = data.documentId;
+    const attributes = data.attributes ? data.attributes : data;
+    let flattened: any = { id, documentId };
+    Object.keys(attributes).forEach((key) => {
+      if (key !== 'id' && key !== 'documentId') {
+        flattened[key] = flatten(attributes[key]);
+      }
+    });
+    return flattened;
   }
-  return res.json();
+  return data;
 }
 
-/**
- * Prepends the Strapi URL to relative image paths.
- */
-export function getStrapiMedia(url: string | null | undefined) {
-  if (!url) return "";
-  if (url.startsWith("http") || url.startsWith("//")) return url;
-  return `${STRAPI_URL}${url}`;
-}
-
-// --- Query Builder ---
-function buildQuery(params: {
-  filters?: Record<string, any>;
-  sort?: string | string[];
-  populate?: any;
-  pagination?: { limit?: number; page?: number };
-  query?: string;
-} = {}): string {
-  const queryObj: any = {};
-
-  // Standard population for Products
-  queryObj.populate = params.populate || {
-    Image: { fields: ['url', 'alternativeText'] },
-    badges: { fields: ['label', 'tone', 'isActive'] },
-    categories: { fields: ['Name'] }, 
-  };
-
-  const filters: any = params.filters || {};
-  if (params.query) filters.Name = { $containsi: params.query };
-  queryObj.filters = filters;
-
-  if (params.sort) queryObj.sort = params.sort;
-  if (params.pagination) {
-    queryObj.pagination = { 
-      pageSize: params.pagination.limit || 10, 
-      page: params.pagination.page || 1 
-    };
+async function fetchStrapi(path: string) {
+  try {
+    const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const json = await response.json();
+    return flatten(json);
+  } catch (error) {
+    console.error("Strapi Fetch Error:", error);
+    return null;
   }
+}
 
-  const queryString = qs.stringify(queryObj, { encodeValuesOnly: true });
-  return queryString ? `?${queryString}` : "";
+export function getStrapiMedia(data: any) {
+  if (!data) return "/placeholder-product.jpg";
+  let url = "";
+  if (Array.isArray(data) && data.length > 0) {
+    url = data[0].url || data[0].attributes?.url;
+  } else if (data.url) {
+    url = data.url;
+  }
+  if (!url) return "/placeholder-product.jpg";
+  return url.startsWith("http") ? url : `${STRAPI_URL}${url}`;
 }
 
 // --- API Methods ---
 
 export async function getCategories(): Promise<StrapiCategory[]> {
-  const query = qs.stringify({ sort: ['Name:asc'], fields: ['Name', 'documentId'] });
-  const res = await strapiFetch<StrapiListResponse<StrapiCategory>>(`/categories?${query}`);
-  return res.data || [];
-}
-
-export async function getPremiumProduct(): Promise<StrapiProduct | null> {
-  const queryString = buildQuery({
-    filters: { badges: { label: { $eq: 'Premium' } } },
-    pagination: { limit: 1 }
-  });
-  const res = await strapiFetch<StrapiListResponse<StrapiProduct>>(`/products${queryString}`);
-  return res.data?.[0] || null;
-}
-
-export async function getFeaturedProducts(limit = 8): Promise<StrapiProduct[]> {
-  const queryString = buildQuery({
-    filters: { badges: { label: { $eq: 'Featured' } } }, 
-    sort: ['createdAt:desc'],
-    pagination: { limit },
-  });
-  const res = await strapiFetch<StrapiListResponse<StrapiProduct>>(`/products${queryString}`);
-  return res.data || [];
+  const query = qs.stringify({ populate: ['CatImage'], sort: ['Name:asc'] });
+  const res = await fetchStrapi(`/categories?${query}`);
+  return Array.isArray(res) ? res : [];
 }
 
 export async function getAllProducts(limit = 50, categoryName?: string, searchTerm?: string): Promise<StrapiProduct[]> {
-  const filters: any = {};
-  if (categoryName && categoryName !== 'All') {
-    filters.categories = { Name: { $eq: categoryName } };
-  }
-  
-  const queryString = buildQuery({ filters, query: searchTerm, pagination: { limit }, sort: ['createdAt:desc'] });
-  const res = await strapiFetch<StrapiListResponse<StrapiProduct>>(`/products${queryString}`);
-  return res.data || [];
-}
+  const query = qs.stringify({
+    populate: {
+      Image: { populate: '*' },
+      badges: { populate: '*' },
+      categories: { populate: '*' },
+      variants: { populate: { variantImage: { populate: '*' } } },
+      FAQs: { populate: '*' }
+    },
+    filters: {
+      $and: [
+        categoryName && categoryName !== 'All' ? { categories: { Name: { $containsi: categoryName } } } : {},
+        searchTerm ? { Name: { $containsi: searchTerm } } : {},
+      ].filter(f => Object.keys(f).length > 0)
+    },
+    pagination: { pageSize: limit },
+    sort: ['createdAt:desc']
+  }, { encodeValuesOnly: true });
 
-export async function getProductById(documentId: string): Promise<StrapiProduct | null> {
-  const queryString = buildQuery({});
-  try {
-    const res = await strapiFetch<StrapiSingleResponse<StrapiProduct>>(`/products/${documentId}${queryString}`);
-    return res.data;
-  } catch { return null; }
+  const res = await fetchStrapi(`/products?${query}`);
+  return Array.isArray(res) ? res : [];
 }
 
 export async function getRecentProducts(limit = 8): Promise<StrapiProduct[]> {
-  const queryString = buildQuery({
-    sort: ['createdAt:desc'],
-    pagination: { limit },
-  });
-  const res = await strapiFetch<StrapiListResponse<StrapiProduct>>(`/products${queryString}`);
-  return res.data || [];
+  return await getAllProducts(limit);
+}
+
+export async function getProductById(id: string): Promise<StrapiProduct | null> {
+  const query = qs.stringify({
+    populate: {
+      Image: { populate: '*' },
+      badges: { populate: '*' },
+      categories: { populate: '*' },
+      variants: { populate: { variantImage: { populate: '*' } } },
+      FAQs: { populate: '*' }
+    }
+  }, { encodeValuesOnly: true });
+  
+  return await fetchStrapi(`/products/${id}?${query}`);
+}
+
+export async function getFeaturedProducts(limit = 8): Promise<StrapiProduct[]> {
+    const query = qs.stringify({
+        populate: { 
+          Image: { populate: '*' }, 
+          badges: { populate: '*' },
+          categories: { populate: '*' }
+        },
+        filters: { 
+          badges: { 
+            label: { $containsi: 'Featur' },
+            isActive: { $eq: true } 
+          } 
+        },
+        pagination: { pageSize: limit }
+    }, { encodeValuesOnly: true });
+    
+    const res = await fetchStrapi(`/products?${query}`);
+    return Array.isArray(res) ? res : [];
+}
+
+export async function getPremiumProduct(): Promise<StrapiProduct | null> {
+  const products = await getFeaturedProducts(1);
+  return products[0] || null;
 }

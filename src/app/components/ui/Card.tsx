@@ -1,7 +1,11 @@
 "use client";
 
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { getStrapiMedia } from "@/lib/strapi";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 export type BadgeTone = "orange" | "green" | "red" | "blue" | "purple";
 
@@ -11,16 +15,24 @@ export interface Badge {
   isActive?: boolean;
 }
 
+export interface Variant {
+  id: number;
+  type?: string; 
+  Type?: string; 
+  Description?: string;
+  variantImage?: any;
+}
+
 export interface CardProps {
   title: string;
   description?: string;
   subtitle?: string;
-  meta?: string | string[];
-  imageSrc: string;
+  imageSrc: string; // This is now expected to be the full URL
   imageAlt?: string;
-  price?: string | number;
   href?: string;
+  price?: number | null;
   badges?: Badge[];
+  variants?: Variant[];
   className?: string;
 }
 
@@ -34,94 +46,132 @@ const toneClasses: Record<BadgeTone, string> = {
 
 export default function Card({
   title,
-  description,
   subtitle,
-  meta,
   imageSrc,
   imageAlt = title,
-  price,
   href,
+  price,
   badges = [],
+  variants = [],
   className = "",
 }: CardProps) {
-  
-  const displayPrice = price !== undefined 
-    ? typeof price === "number" 
-      ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
-      : price
-    : null;
+  const [activeVariant, setActiveVariant] = useState<Variant | null>(null);
+  const imageRef = useRef(null);
+  const containerRef = useRef(null);
 
-  const content = (
-    <article
-      className={`group relative flex flex-col h-full overflow-hidden rounded-2xl bg-white border border-zinc-100 transition-all duration-500 hover:shadow-xl hover:-translate-y-1.5 ${className}`}
+  const getVariantName = (v: Variant | null) => {
+    if (!v) return "";
+    return v.Type || v.type || "";
+  };
+
+  useGSAP(() => {
+    if (imageRef.current) {
+      gsap.fromTo(imageRef.current, 
+        { opacity: 0, filter: "blur(4px)" }, 
+        { opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power2.out" }
+      );
+    }
+  }, { dependencies: [activeVariant], scope: containerRef });
+
+  const variantName = getVariantName(activeVariant);
+  const displayTitle = variantName ? `${title} - ${variantName}` : title;
+
+  // Decide which image to show
+  const displayImage = activeVariant 
+    ? getStrapiMedia(activeVariant.variantImage) 
+    : imageSrc;
+
+  return (
+    <article 
+      ref={containerRef}
+      className={`group relative flex flex-col h-full overflow-hidden rounded-2xl bg-white border border-zinc-100 transition-all duration-500 hover:shadow-xl ${className}`}
     >
-      {/* Image Container */}
-      <div className="relative aspect-4/5 overflow-hidden bg-zinc-100">
-        <Image
-          src={imageSrc || "/placeholder-product.jpg"}
-          alt={imageAlt}
-          fill
-          sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-          priority={false}
-        />
+      {/* 1. Image Section */}
+      <Link href={href || "#"} className="relative aspect-square overflow-hidden bg-zinc-50 block">
+        <div ref={imageRef} className="w-full h-full relative">
+          <Image
+            src={displayImage || "/placeholder-product.jpg"}
+            alt={imageAlt}
+            fill
+            unoptimized
+            className="object-cover"
+          />
+        </div>
         
-        {/* Badges Overlay */}
         <div className="absolute left-3 top-3 z-20 flex flex-col gap-1.5">
-          {badges
-            .filter(b => b.isActive !== false) // Only show if isActive is true or undefined
-            .map((badge, idx) => (
+          {badges?.filter(b => b.isActive !== false).map((badge, idx) => (
             <span 
-              key={`${badge.label}-${idx}`}
-              className={`inline-flex items-center rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ring-1 ring-inset backdrop-blur-md shadow-sm ${toneClasses[badge.tone || "orange"]}`}
+              key={idx} 
+              className={`inline-flex items-center rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ring-1 ring-inset backdrop-blur-md ${toneClasses[badge.tone || "orange"]}`}
             >
               {badge.label}
             </span>
           ))}
         </div>
-      </div>
+      </Link>
 
-      {/* Content Section */}
       <div className="flex flex-1 flex-col p-5">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <h3 className="text-lg font-bold tracking-tight text-zinc-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
-            {title}
-          </h3>
-          {displayPrice && (
-            <span className="shrink-0 font-bold text-zinc-900 text-sm">{displayPrice}</span>
-          )}
+        {/* 2. Variant Swatches */}
+        {variants && variants.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {/* Main Product Selector */}
+            <button
+              onClick={(e) => { e.preventDefault(); setActiveVariant(null); }}
+              className={`relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all ${
+                activeVariant === null ? "border-orange-600 ring-2 ring-orange-100" : "border-zinc-200"
+              }`}
+            >
+              <Image src={imageSrc} alt="Main" fill className="object-cover" unoptimized />
+            </button>
+
+            {/* Individual Variants */}
+            {variants.map((v) => {
+              const vImg = getStrapiMedia(v.variantImage);
+              const vName = getVariantName(v);
+              return (
+                <button
+                  key={v.id}
+                  onClick={(e) => { e.preventDefault(); setActiveVariant(v); }}
+                  className={`relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all ${
+                    activeVariant?.id === v.id ? "border-orange-600 ring-2 ring-orange-100" : "border-zinc-200"
+                  }`}
+                >
+                  {vImg && vImg !== "/placeholder-product.jpg" ? (
+                    <Image src={vImg} alt={vName} fill className="object-cover" unoptimized />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-[8px] font-bold text-zinc-500 uppercase">
+                      {vName.substring(0, 2)}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mb-1">
+          <Link href={href || "#"}>
+            <h3 className="text-base font-black tracking-tight text-zinc-900 group-hover:text-orange-600 transition-colors uppercase leading-tight min-h-10 flex items-center">
+              {displayTitle}
+            </h3>
+          </Link>
         </div>
 
         {subtitle && (
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-orange-600">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             {subtitle}
           </p>
         )}
 
-        {description && (
-          <p className="mb-4 text-xs leading-relaxed text-zinc-500 line-clamp-2">
-            {description}
-          </p>
-        )}
-
-        {/* Footer Area */}
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-zinc-50">
-          <div className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">
-            {Array.isArray(meta) ? meta.join(" • ") : meta || "View Details"}
+          <div className="text-[10px] font-black text-zinc-900">
+             {price ? `$${price}` : "GLOBAL EXPORT"}
           </div>
-          <div className="p-2 rounded-full bg-zinc-50 group-hover:bg-orange-50 transition-colors text-zinc-400 group-hover:text-orange-600">
-             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:translate-x-0.5">
-                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-             </svg>
-          </div>
+          <Link href={href || "#"} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-orange-600 transition-all">
+            View Details <span className="text-lg">→</span>
+          </Link>
         </div>
       </div>
     </article>
   );
-
-  return href ? (
-    <Link href={href} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-orange-600 rounded-2xl">
-      {content}
-    </Link>
-  ) : content;
 }

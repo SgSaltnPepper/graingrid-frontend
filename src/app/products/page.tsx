@@ -1,172 +1,106 @@
 "use client";
 
-import { useEffect, useRef, useState, use } from "react";
-import { getAllProducts, getStrapiMedia, StrapiProduct } from "@/lib/strapi";
+import { useEffect, useRef, useState, use, Suspense } from "react";
+import { getAllProducts, getStrapiMedia } from "@/lib/strapi";
 import Card from "@/app/components/ui/Card";
-import Search from "@/app/components/ui/Search";
 import Filter from "@/app/components/ui/Filter";
+import Search from "@/app/components/ui/Search";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-interface ProductPageProps {
-  searchParams: Promise<{ query?: string; category?: string }>;
-}
-
-export default function ProductsPage({ searchParams }: ProductPageProps) {
-  // Use 'use' to unwrap the searchParams promise safely in Client Components
+export default function ProductsPage({ searchParams }: { searchParams: Promise<{ query?: string; category?: string }> }) {
   const resolvedParams = use(searchParams);
-  
-  const [products, setProducts] = useState<StrapiProduct[]>([]);
+  const query = resolvedParams.query;
+  const category = resolvedParams.category;
+
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [queryStr, setQueryStr] = useState(resolvedParams.query || "");
-  const [catStr, setCatStr] = useState(resolvedParams.category || "");
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  const heroRef = useRef(null);
-  const gridRef = useRef(null);
-
-  // 1. DATA FETCHING Logic
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const query = resolvedParams.query || "";
-      const category = resolvedParams.category || "";
-      
-      setQueryStr(query);
-      setCatStr(category);
-
-      // getAllProducts handles the 'categories' plural logic we updated in strapi.ts
       const data = await getAllProducts(50, category, query);
-      setProducts(data);
+      setProducts(data || []);
       setLoading(false);
     }
     fetchData();
-  }, [resolvedParams.query, resolvedParams.category]);
+  }, [category, query]);
 
-  // 2. GSAP REVEAL ANIMATIONS
   useEffect(() => {
-    if (loading) return;
-
-    gsap.registerPlugin(ScrollTrigger);
-
+    if (loading || !products.length) return;
     const ctx = gsap.context(() => {
-      // Hero Text Reveal (runs once on load)
-      gsap.from(".reveal-text", {
-        y: 60,
-        opacity: 0,
-        duration: 1,
-        stagger: 0.15,
-        ease: "power4.out",
+      gsap.from(".product-card", { 
+        y: 20, 
+        opacity: 0, 
+        duration: 0.5, 
+        stagger: 0.05, 
+        ease: "power2.out" 
       });
-
-      // Product Cards Staggered Entrance (runs when products change)
-      gsap.from(".product-card", {
-        y: 40,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.08,
-        ease: "expo.out",
-        clearProps: "all" // Clears transform styles after animation for hover effects
-      });
-    });
-
+    }, gridRef);
     return () => ctx.revert();
-  }, [loading, products.length]); // Re-run animation when product count changes
+  }, [loading, products]);
 
   return (
-    <main className="min-h-screen bg-white overflow-hidden">
-      {/* 1. HERO / HEADER SECTION */}
-      <section ref={heroRef} className="bg-dark-900 pt-32 pb-24 px-6 lg:px-8">
+    <main className="min-h-screen bg-white">
+      {/* 1. Header Hero Section */}
+      <section className="bg-zinc-950 pt-32 pb-20 px-6 lg:px-12">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-end">
-            <div className="max-w-3xl overflow-hidden">
-              <nav className="reveal-text mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em]">
-                <span className="opacity-50 text-white">Main</span>
-                <span className="text-white/20">/</span>
-                <span className="text-orange-600">Products</span>
-              </nav>
-              <h1 className="reveal-text text-6xl font-black uppercase tracking-tighter text-white sm:text-8xl">
-                The <span className="text-orange-600">Inventory</span>
-              </h1>
-              <p className="reveal-text mt-8 text-xl font-medium leading-relaxed text-light-400/70 max-w-xl">
-              "Eat Fresh"  Focuses on health, quality ingredients, and a modern
-              </p>
+          <h1 className="text-5xl font-black uppercase text-white sm:text-7xl mb-4">
+            The <span className="text-orange-500">Catalogue</span>
+          </h1>
+          <p className="text-zinc-400 max-w-xl text-sm font-medium leading-relaxed uppercase tracking-widest">
+            Explore our complete collection of heritage grains and experimental studio releases.
+          </p>
+        </div>
+      </section>
+
+      {/* 2. Interactive Toolbar (Search & Filter) */}
+      <section className="sticky top-0 z-30 border-b border-zinc-100 bg-white/80 backdrop-blur-md px-6 py-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+            <div className="w-full lg:max-w-md">
+              <Suspense fallback={<div className="h-12 w-full animate-pulse bg-zinc-100 rounded-2xl" />}>
+                <Search />
+              </Suspense>
             </div>
-            
-            <div className="reveal-text w-full lg:max-w-md">
-              <Search />
+            <div className="w-full lg:w-auto">
+              <Suspense fallback={<div className="h-10 w-64 animate-pulse bg-zinc-100 rounded-full" />}>
+                <Filter />
+              </Suspense>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. CONTROL BAR (Sticky) */}
-      <section className="sticky top-0 z-40 border-b border-light-200 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-6 py-5 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-8">
-               <Filter />
-               <div className="hidden h-8 w-px bg-light-200 md:block" />
-               <div className="hidden flex-col md:flex">
-                 <span className="text-[9px] font-black uppercase tracking-widest text-dark-400">Current View</span>
-                 <p className="text-xs font-bold uppercase text-dark-900">
-                    {catStr ? catStr : 'Global Archive'}
-                 </p>
-               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="rounded-full bg-dark-900 px-4 py-1.5 text-[10px] font-black uppercase tracking-tighter text-white">
-                {products.length} Results
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. PRODUCT GRID */}
-      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
+      {/* 3. Products Grid Section */}
+      <section ref={gridRef} className="mx-auto max-w-7xl px-6 py-20">
         {loading ? (
-          <div className="flex h-[40vh] items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-               <div className="h-10 w-10 animate-spin rounded-full border-2 border-orange-600 border-t-transparent" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-dark-400">Syncing Collection...</span>
-            </div>
+          <div className="flex flex-col items-center py-40">
+            <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-orange-500 mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Refreshing Collection</p>
           </div>
         ) : products.length > 0 ? (
-          <div ref={gridRef} className="grid grid-cols-1 gap-x-10 gap-y-20 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((p) => (
-              <div key={p.documentId} className="product-card">
+              <div key={p.documentId || p.id} className="product-card">
                 <Card
                   title={p.Name}
-                  // Pull from 'categories' array we set up in Strapi
-                  subtitle={p.categories?.[0]?.Name || "Masterpiece"}
-                  description={p.Description?.[0]?.children?.[0]?.text || ""}
-                  imageSrc={getStrapiMedia(p.Image?.[0]?.url)}
-                  imageAlt={p.Image?.[0]?.alternativeText || p.Name}
+                  subtitle={p.categories?.[0]?.Name || "Collection"}
+                  imageSrc={getStrapiMedia(p.Image)}
                   price={p.Price}
-                  href={`/products/${p.documentId}`}
+                  href={`/products/${p.documentId || p.id}`}
                   badges={p.badges}
+                  variants={p.variants}
                 />
               </div>
             ))}
           </div>
         ) : (
-          /* 4. EMPTY STATE */
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-full bg-light-100 text-dark-200">
-               <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-               </svg>
-            </div>
-            <h3 className="text-3xl font-black uppercase tracking-tight text-dark-900">End of the Line</h3>
-            <p className="mt-4 max-w-sm text-lg font-medium text-dark-500">
-              We couldn't find any pieces matching "<span className="text-orange-600 font-bold">{queryStr}</span>" in the {catStr || 'selected'} collection.
+          <div className="flex flex-col items-center justify-center py-40 text-center border-2 border-dashed border-zinc-100 rounded-3xl">
+            <h3 className="text-xl font-black uppercase text-zinc-900 mb-2">No Results Found</h3>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
+              Try adjusting your filters or search terms.
             </p>
-            <button 
-               onClick={() => window.location.href = '/products'}
-               className="mt-10 text-[10px] font-black uppercase tracking-widest text-orange-600 border-b-2 border-orange-600/20 pb-1 hover:border-orange-600 transition-all"
-            >
-              Reset Search
-            </button>
           </div>
         )}
       </section>

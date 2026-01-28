@@ -1,132 +1,157 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { StrapiProduct, getStrapiMedia } from "@/lib/strapi";
+import { getStrapiMedia } from "@/lib/strapi";
+import { MoveRight, Play } from "lucide-react";
+import gsap from "gsap";
 
-export default function HeroSlider({ products }: { products: StrapiProduct[] }) {
+export default function HeroSlider({ products }: { products: any[] }) {
   const [current, setCurrent] = useState(0);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const nextSlide = useCallback(() => {
     setCurrent((prev) => (prev === products.length - 1 ? 0 : prev + 1));
   }, [products.length]);
 
+  // Handle slide transitions with GSAP
   useEffect(() => {
-    if (products.length <= 1) return;
-    const timer = setInterval(nextSlide, 6000);
-    return () => clearInterval(timer);
-  }, [nextSlide, products.length]);
+    const ctx = gsap.context(() => {
+      // Animate current slide text
+      gsap.fromTo(
+        ".hero-title",
+        { y: 100, opacity: 0, skewY: 7 },
+        { y: 0, opacity: 1, skewY: 0, duration: 1.2, ease: "expo.out", delay: 0.2 }
+      );
+      
+      gsap.fromTo(
+        ".hero-desc",
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.5 }
+      );
+
+      gsap.fromTo(
+        ".hero-btn",
+        { scale: 0.8, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)", delay: 0.8, stagger: 0.1 }
+      );
+
+      // Progress bar animation
+      gsap.fromTo(
+        progressRef.current,
+        { scaleX: 0 },
+        { scaleX: 1, duration: 6, ease: "none" }
+      );
+    }, sliderRef);
+
+    return () => ctx.revert();
+  }, [current]);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(nextSlide, 6000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [nextSlide]);
 
   if (!products?.length) return null;
 
   return (
-    <section className="relative h-[85vh] min-h-150 w-full overflow-hidden bg-zinc-950">
-      {products.map((product, index) => {
-        const imageUrl = getStrapiMedia(product.Image?.[0]?.url);
+    <section ref={sliderRef} className="relative h-[85vh] lg:h-[90vh] w-full overflow-hidden bg-zinc-950">
+      {/* Noise Texture Overlay for Premium Feel */}
+      <div className="pointer-events-none absolute inset-0 z-40 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
+      {products.map((item, index) => {
+        const imageUrl = getStrapiMedia(item.Image);
         const isActive = index === current;
-        const descriptionText = product.Description?.[0]?.children?.[0]?.text || "";
-        const primaryCategory = product.categories?.[0]?.Name || "Exclusive Collection";
+        const descriptionText = typeof item.Description === 'string' 
+          ? item.Description 
+          : item.Description?.[0]?.children?.[0]?.text || "";
 
         return (
           <div
-            key={product.documentId}
-            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              isActive ? "opacity-100 z-10 visible" : "opacity-0 z-0 invisible"
+            key={item.documentId || item.id}
+            className={`absolute inset-0 flex items-center transition-all duration-1000 ${
+              isActive ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
           >
-            {/* CINEMATIC BACKGROUND */}
-            {imageUrl && (
-              <div className="absolute inset-0">
-                <Image
-                  src={imageUrl}
-                  alt={product.Name}
-                  fill
-                  priority={index === 0}
-                  sizes="100vw"
-                  className={`object-cover transition-transform duration-6000 ease-linear ${
-                    isActive ? "scale-110" : "scale-100"
-                  }`}
-                />
-                {/* DARK OVERLAY */}
-                <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
-              </div>
-            )}
+            {/* BACKGROUND WITH DUAL OVERLAY */}
+            <div className="absolute inset-0">
+              <Image
+                src={imageUrl}
+                alt={item.Name}
+                fill
+                priority={index === 0}
+                className={`object-cover object-center transition-transform duration-6000 ease-out ${
+                  isActive ? "scale-110 rotate-1" : "scale-125"
+                }`}
+              />
+              <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/60 to-transparent z-10" />
+              <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-transparent to-transparent z-10" />
+            </div>
 
-            {/* CONTENT */}
-            <div className="relative z-20 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-              <div className={`mb-6 flex flex-col items-center gap-4 transition-all duration-1000 delay-300 ${
-                isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-              }`}>
-                <span className="text-sm font-black uppercase tracking-[0.5em] text-orange-500">
-                  {primaryCategory}
-                </span>
-                
-                <div className="flex gap-2">
-                  {product.badges?.map((badge) => (
-                    <span
-                      key={badge.documentId}
-                      className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[9px] font-bold uppercase tracking-widest backdrop-blur-md"
-                    >
-                      {badge.label}
+            {/* CONTENT CONTAINER */}
+            <div className="container relative z-20 mx-auto px-6 lg:px-12">
+              <div className="max-w-4xl">
+                <div className="mb-6 flex items-center gap-4 overflow-hidden">
+                  <div className="h-px w-12 bg-orange-500" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-orange-500">
+                    {item.categories?.[0]?.Name || "Featured"}
+                  </span>
+                </div>
+
+                <h1 className="hero-title text-6xl font-black uppercase tracking-tighter text-white sm:text-8xl lg:text-[7vw] leading-[0.85]">
+                  {item.Name.split(' ').map((word: string, i: number) => (
+                    <span key={i} className="inline-block mr-4">
+                      {word === "Premium" ? <span className="text-orange-600 italic font-serif lowercase">{word}</span> : word}
                     </span>
                   ))}
-                </div>
-              </div>
+                </h1>
 
-              <h1 className={`max-w-4xl text-5xl font-black uppercase tracking-tighter sm:text-7xl lg:text-8xl transition-all duration-1000 delay-500 ${
-                isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-              }`}>
-                {product.Name}
-              </h1>
-
-              {descriptionText && (
-                <p className={`mt-6 max-w-xl text-base font-medium leading-relaxed text-zinc-300 transition-all duration-1000 delay-700 ${
-                  isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-                }`}>
+                <p className="hero-desc mt-8 max-w-xl text-lg font-medium leading-relaxed text-zinc-400">
                   {descriptionText}
                 </p>
-              )}
 
-              <div className={`mt-10 flex flex-wrap justify-center gap-4 transition-all duration-1000 delay-1000 ${
-                isActive ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-              }`}>
-                <Link
-                  href={`/products/${product.documentId}`}
-                  className="rounded-full bg-orange-600 px-10 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-orange-600"
-                >
-                  Discover Piece
-                </Link>
-                <Link
-                  href="/products"
-                  className="rounded-full border border-white/30 bg-transparent px-10 py-4 text-[10px] font-black uppercase tracking-widest text-white backdrop-blur-sm transition-all hover:bg-white/10"
-                >
-                  View Gallery
-                </Link>
+                <div className="mt-12 flex flex-wrap gap-5">
+                  <Link
+                    href={`/products/${item.documentId || item.id}`}
+                    className="hero-btn group relative flex items-center gap-3 overflow-hidden rounded-full bg-orange-600 px-10 py-5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-orange-600"
+                  >
+                    Explore Product <MoveRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                  </Link>
+                  
+                </div>
               </div>
             </div>
           </div>
         );
       })}
 
-      {/* SIDE PROGRESS BAR */}
-      <div className="absolute right-6 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-6">
-        {products.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className="group flex items-center justify-end gap-3"
-          >
-            <span className={`text-[10px] font-bold transition-all duration-300 ${
-              i === current ? "text-orange-500 opacity-100" : "text-white opacity-0 group-hover:opacity-60"
-            }`}>
-              0{i + 1}
-            </span>
-            <div className={`h-10 w-0.5 transition-all duration-500 ${
-              i === current ? "bg-orange-500 h-14" : "bg-white/20"
-            }`} />
-          </button>
-        ))}
+      {/* BOTTOM NAV & PROGRESS */}
+      <div className="absolute bottom-12 left-6 right-6 z-30 flex flex-col md:flex-row items-end md:items-center justify-between gap-8 lg:px-12">
+        <div className="flex items-center gap-4">
+          <div className="relative h-px w-40 bg-white/20 overflow-hidden">
+            <div ref={progressRef} className="absolute inset-0 bg-orange-500 origin-left scale-x-0" />
+          </div>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">
+            0{current + 1} / 0{products.length}
+          </span>
+        </div>
+
+        <div className="flex gap-4">
+          {products.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-2 w-2 rounded-full transition-all duration-500 ${
+                i === current ? "w-12 bg-orange-600" : "bg-white/30 hover:bg-white/60"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

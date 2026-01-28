@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { MoveUpRight, ArrowUp } from "lucide-react";
+import { 
+  MoveUpRight, 
+  ArrowUp, 
+  Instagram, 
+  Twitter, 
+  Linkedin, 
+  Facebook,
+  Mail,
+  ArrowRight
+} from "lucide-react";
 
 const FOOTER_LINKS = {
   shop: [
@@ -20,6 +29,13 @@ const FOOTER_LINKS = {
   ],
 };
 
+const SOCIAL_LINKS = [
+  { icon: <Instagram size={18} />, href: "#", label: "Instagram" },
+  { icon: <Twitter size={18} />, href: "#", label: "Twitter" },
+  { icon: <Linkedin size={18} />, href: "#", label: "LinkedIn" },
+  { icon: <Facebook size={18} />, href: "#", label: "Facebook" },
+];
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -28,76 +44,81 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-light-300 bg-white pt-24 pb-12 overflow-hidden">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <footer className="relative bg-zinc-950 pt-32 pb-12 overflow-hidden text-white">
+      {/* Decorative Background Text */}
+      <div className="absolute top-0 left-0 w-full overflow-hidden pointer-events-none opacity-[0.02] select-none">
+        <h2 className="text-[25vw] font-black uppercase leading-none -translate-y-1/2">
+          GRAINGRID
+        </h2>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-6 lg:px-12 relative z-10">
         
         {/* TOP SECTION: BIG CTA */}
-        <div className="mb-24 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
-          <div className="max-w-xl">
-            <h2 className="text-5xl font-black uppercase tracking-tighter text-dark-900 sm:text-7xl">
-              Elevate Your <span className="text-orange-600">Standard.</span>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12 mb-32">
+          <div className="max-w-3xl">
+            <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.85]">
+              Let&apos;s build the <br /> 
+              <span className="text-orange-600">Future</span> of Taste.
             </h2>
-            <p className="mt-6 text-lg font-medium text-dark-500">
-              Experience the intersection of nature's purity and modern curation. 
-              Join our community for a first look at limited harvests.
-            </p>
           </div>
           <button 
             onClick={scrollToTop}
-            className="group flex h-20 w-20 items-center justify-center rounded-full border border-dark-900 transition-all hover:bg-dark-900"
+            className="group relative flex h-24 w-24 items-center justify-center rounded-full border border-zinc-800 transition-all hover:border-orange-600 hover:bg-orange-600 active:scale-90"
           >
-            <ArrowUp className="h-6 w-6 text-dark-900 transition-colors group-hover:text-white" />
+            <ArrowUp className="h-8 w-8 text-white transition-transform group-hover:-translate-y-2" />
+            <span className="absolute -bottom-8 text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">Top</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-8">
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-12 lg:gap-12 pb-24">
           {/* Brand Info */}
-          <div className="lg:col-span-4">
-            <div className="flex flex-col gap-6">
-              <span className="text-3xl font-black uppercase tracking-tighter text-dark-900">
-                Grain<span className="text-orange-600">Grid.</span>
+          <div className="lg:col-span-4 space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-orange-600 rounded-lg flex items-center justify-center font-black italic text-xl">G</div>
+              <span className="text-2xl font-black uppercase tracking-tighter">
+                GrainGrid<span className="text-orange-600">.</span>
               </span>
-              <p className="max-w-xs text-sm font-medium leading-relaxed text-dark-500">
-                Based in the heart of authentic sourcing, we deliver premium harvests
-                worldwide. Quality isn't a goal; it's our baseline.
-              </p>
-              <div className="flex gap-6">
-                {["Instagram", "LinkedIn", "Twitter"].map((social) => (
-                  <a 
-                    key={social} 
-                    href="#" 
-                    className="text-[10px] font-black uppercase tracking-[0.2em] text-dark-400 hover:text-orange-600 transition-colors"
-                  >
-                    {social}
-                  </a>
-                ))}
-              </div>
+            </div>
+            <p className="max-w-sm text-zinc-400 text-lg leading-relaxed font-medium">
+              Sourcing the finest organic harvests with a commitment to transparency and unmatched quality.
+            </p>
+            <div className="flex gap-4">
+              {SOCIAL_LINKS.map((social) => (
+                <a 
+                  key={social.label} 
+                  href={social.href} 
+                  className="h-12 w-12 rounded-full border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:border-orange-600 hover:bg-orange-600 transition-all duration-300"
+                  aria-label={social.label}
+                >
+                  {social.icon}
+                </a>
+              ))}
             </div>
           </div>
 
           {/* Navigation Links */}
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-5">
-            <div>
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-dark-900">Collection</h3>
-              <ul className="mt-8 space-y-4">
+          <div className="lg:col-span-5 grid grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-500">Shop</h3>
+              <ul className="space-y-4">
                 {FOOTER_LINKS.shop.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="group flex items-center gap-2 text-sm font-medium text-dark-500 transition-colors hover:text-dark-900">
-                      {link.label}
-                      <MoveUpRight className="h-3 w-3 opacity-0 transition-all group-hover:opacity-100" />
+                    <Link href={link.href} className="group flex items-center gap-2 text-zinc-400 transition-colors hover:text-white">
+                      <span className="text-lg font-bold uppercase tracking-tight">{link.label}</span>
+                      <MoveUpRight className="h-4 w-4 opacity-0 -translate-y-1 translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0" />
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
-            <div>
-              <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-dark-900">Experience</h3>
-              <ul className="mt-8 space-y-4">
+            <div className="space-y-8">
+              <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-500">Company</h3>
+              <ul className="space-y-4">
                 {FOOTER_LINKS.company.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="group flex items-center gap-2 text-sm font-medium text-dark-500 transition-colors hover:text-dark-900">
-                      {link.label}
-                      <MoveUpRight className="h-3 w-3 opacity-0 transition-all group-hover:opacity-100" />
+                    <Link href={link.href} className="group flex items-center gap-2 text-zinc-400 transition-colors hover:text-white">
+                      <span className="text-lg font-bold uppercase tracking-tight">{link.label}</span>
                     </Link>
                   </li>
                 ))}
@@ -106,51 +127,49 @@ export default function Footer() {
           </div>
 
           {/* Newsletter Section */}
-          <div className="lg:col-span-3">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-dark-900">Newsletter</h3>
-            <form className="mt-8">
-              <div className="group relative">
+          <div className="lg:col-span-3 space-y-8">
+            <h3 className="text-[11px] font-black uppercase tracking-[0.4em] text-orange-500">Newsletter</h3>
+            <div className="space-y-4">
+              <p className="text-zinc-400 text-sm">Join for exclusive harvest updates.</p>
+              <form className="relative group">
                 <input
                   type="email"
-                  placeholder="JOIN THE ARCHIVE"
-                  className="w-full border-b border-light-300 bg-transparent py-3 text-[11px] font-bold uppercase tracking-widest text-dark-900 focus:border-orange-600 focus:outline-none transition-all"
+                  placeholder="EMAIL ADDRESS"
+                  className="w-full bg-zinc-900 border-none rounded-xl py-4 px-6 text-[11px] font-bold uppercase tracking-widest text-white focus:ring-2 focus:ring-orange-600 transition-all outline-none"
                 />
                 <button 
                   type="submit"
-                  className="absolute right-0 top-3 text-[10px] font-black uppercase tracking-widest text-dark-900 hover:text-orange-600"
+                  className="absolute right-2 top-2 h-10 w-10 bg-orange-600 rounded-lg flex items-center justify-center hover:bg-white hover:text-orange-600 transition-colors"
                 >
-                  Sub.
+                  <ArrowRight size={18} />
                 </button>
-              </div>
-            </form>
-            <p className="mt-4 text-[10px] font-medium leading-relaxed text-dark-400">
-              *By subscribing, you agree to our Terms & Privacy Policy.
-            </p>
+              </form>
+            </div>
           </div>
         </div>
 
-        {/* BACKGROUND DECORATIVE TEXT */}
-        <div className="pointer-events-none absolute -bottom-10 left-0 w-full select-none opacity-[0.08]">
-          <span className="whitespace-nowrap text-[15rem] font-black uppercase tracking-tighter text-dark-900">
-            Harvest Grain
-          </span>
-        </div>
-
         {/* BOTTOM BAR */}
-        <div className="mt-32 border-t border-light-200 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-dark-400">
-            © {currentYear} GrainGrid. Built for the modern palate.
-          </p>
-          <div className="flex gap-8">
-            {FOOTER_LINKS.legal.map((link) => (
-              <Link 
-                key={link.label} 
-                href={link.href} 
-                className="text-[10px] font-bold uppercase tracking-[0.3em] text-dark-400 hover:text-dark-900"
-              >
-                {link.label}
-              </Link>
-            ))}
+        <div className="pt-10 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+              © {currentYear} GrainGrid International.
+            </p>
+            <div className="flex gap-6">
+              {FOOTER_LINKS.legal.map((link) => (
+                <Link 
+                  key={link.label} 
+                  href={link.href} 
+                  className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-orange-500 transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-zinc-600">
+            <Mail size={14} />
+            <span className="text-[10px] font-black uppercase tracking-widest">hello@graingrid.com</span>
           </div>
         </div>
       </div>
