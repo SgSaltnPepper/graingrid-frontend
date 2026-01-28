@@ -10,13 +10,13 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'http',
-        hostname: 'localhost',
+        hostname: 'https://graingrid-backend.onrender.com',
         port: '1337',
         pathname: '/uploads/**',
       },
       {
         protocol: 'http',
-        hostname: '127.0.0.1',
+        hostname: 'https://graingrid-backend.onrender.com',
         port: '1337',
         pathname: '/uploads/**',
       },
