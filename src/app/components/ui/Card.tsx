@@ -55,7 +55,11 @@ export default function Card({
   variants = [],
   className = "",
 }: CardProps) {
-  const [activeVariant, setActiveVariant] = useState<Variant | null>(null);
+  // CHANGED: Default to the first variant if available, otherwise null (Main Product)
+  const [activeVariant, setActiveVariant] = useState<Variant | null>(
+    variants && variants.length > 0 ? variants[0] : null
+  );
+  
   const imageRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -114,16 +118,8 @@ export default function Card({
         {/* 2. Variant Swatches */}
         {variants && variants.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
-            {/* Main Product Selector */}
-            <button
-              onClick={(e) => { e.preventDefault(); setActiveVariant(null); }}
-              className={`relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all ${
-                activeVariant === null ? "border-orange-600 ring-2 ring-orange-100" : "border-zinc-200"
-              }`}
-            >
-              <Image src={imageSrc} alt="Main" fill className="object-cover" unoptimized />
-            </button>
-
+            {/* CHANGED: Removed the "Main Product Selector" button. Only variants are shown. */}
+            
             {/* Individual Variants */}
             {variants.map((v) => {
               const vImg = getStrapiMedia(v.variantImage);
