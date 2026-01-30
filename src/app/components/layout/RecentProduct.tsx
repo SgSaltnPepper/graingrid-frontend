@@ -79,6 +79,9 @@ const RecentProducts = async () => {
                     href={`/products/${p.documentId || p.id}`}
                     imageAlt={p.Name}
                     badges={p.badges} 
+                    // Pass ONLY the explicit variants from Strapi (3 items)
+                    // If the Card component automatically adds the main image, 
+                    // you may need to open Card.tsx and remove the logic that prepends the main product.
                     variants={p.variants} 
                   />
                 </div>
