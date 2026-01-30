@@ -11,6 +11,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<StrapiVariant | null>(null);
+  
+  // Ref for the image container to animate
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -24,6 +27,47 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     fetchProduct();
   }, [id]);
 
+  // Animation Trigger: Runs whenever selectedVariant changes
+  useEffect(() => {
+    if (imageContainerRef.current && !loading) {
+      gsap.fromTo(
+        imageContainerRef.current,
+        { opacity: 0, scale: 0.95, y: 10, filter: "blur(10px)" },
+        { 
+          opacity: 1, 
+          scale: 1, 
+          y: 0, 
+          filter: "blur(0px)", 
+          duration: 0.6, 
+          ease: "power3.out" 
+        }
+      );
+    }
+  }, [selectedVariant, loading]);
+
+  const handleVariantChange = (variant: StrapiVariant) => {
+    // Prevent animation if clicking the same variant
+    if (selectedVariant?.id === variant.id) return;
+
+    if (imageContainerRef.current) {
+      // Animate OUT
+      gsap.to(imageContainerRef.current, {
+        opacity: 0,
+        y: -10,
+        filter: "blur(5px)",
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          // Change State only after old image is gone
+          setSelectedVariant(variant);
+        }
+      });
+    } else {
+      // Fallback if ref is missing
+      setSelectedVariant(variant);
+    }
+  };
+
   // Helper to parse the Label/Value strings from your JSON into a table
   const renderSpecs = (variant: StrapiVariant) => {
     if (!variant.Label || !variant.Value) return null;
@@ -31,12 +75,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     const values = variant.Value.split('\n');
     
     return (
-      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+      <div className="mt-8 overflow-hidden rounded-2xl border border-slate-100 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
         <table className="w-full text-left">
           <tbody className="divide-y divide-slate-50">
             {labels.map((label, idx) => (
               <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
-                <td className="w-1/3 bg-slate-50/30 px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-orange-600">
+                <td className="w-1/3 bg-slate-50/30 px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-orange-600 transition-colors">
                   {label}
                 </td>
                 <td className="px-6 py-4 text-xs font-bold uppercase tracking-tight text-slate-700">
@@ -61,10 +105,17 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           {/* Image Section */}
           <div className="lg:col-span-5 lg:sticky lg:top-32">
             <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-slate-50 shadow-xl border border-slate-100">
-              <Image 
-                src={selectedVariant?.variantImage ? getStrapiMedia(selectedVariant.variantImage) : getStrapiMedia(product.Image)} 
-                alt={product.Name} fill unoptimized className="object-cover" priority
-              />
+              {/* Wrapper div for GSAP Animation */}
+              <div ref={imageContainerRef} className="relative w-full h-full">
+                <Image 
+                  src={selectedVariant?.variantImage ? getStrapiMedia(selectedVariant.variantImage) : getStrapiMedia(product.Image)} 
+                  alt={product.Name} 
+                  fill 
+                  unoptimized 
+                  className="object-cover" 
+                  priority
+                />
+              </div>
             </div>
           </div>
 
@@ -81,9 +132,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 {product.variants?.map((v: StrapiVariant) => (
                   <button 
                     key={v.id} 
-                    onClick={() => setSelectedVariant(v)}
-                    className={`rounded-xl border-2 px-6 py-3 text-[10px] font-bold uppercase transition-all ${
-                      selectedVariant?.id === v.id ? "border-orange-600 bg-white text-orange-600 shadow-md" : "border-slate-100 bg-slate-50 text-slate-400"
+                    onClick={() => handleVariantChange(v)}
+                    className={`rounded-xl border-2 px-6 py-3 text-[10px] font-bold uppercase transition-all duration-300 ${
+                      selectedVariant?.id === v.id 
+                      ? "border-orange-600 bg-white text-orange-600 shadow-md scale-105" 
+                      : "border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-300"
                     }`}
                   >
                     {v.Type}
@@ -95,9 +148,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {/* Dynamic Description & Specs */}
             <div className="mb-12">
               <p className="mb-3 text-[9px] font-black uppercase tracking-widest text-orange-600">Overview</p>
-              <p className="text-base leading-relaxed text-slate-600 border-l-2 border-orange-100 pl-5">
-                {selectedVariant?.Description || product.Description}
-              </p>
+              <div className="relative min-h-[100px]">
+                 {/* Key forces React to re-animate text if needed, but we rely on simple re-render here */}
+                 <p className="text-base leading-relaxed text-slate-600 border-l-2 border-orange-100 pl-5 transition-all duration-300">
+                    {selectedVariant?.Description || product.Description}
+                 </p>
+              </div>
               {selectedVariant && renderSpecs(selectedVariant)}
             </div>
 
@@ -108,8 +164,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 <div className="space-y-6">
                   {product.FAQs.map((faq: StrapiFAQ) => (
                     <div key={faq.id} className="group">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-orange-600 mb-2">Q: {faq.Ques}</h4>
-                      <p className="text-sm font-medium text-slate-500 leading-relaxed pl-4 border-l border-slate-200">{faq.Ans}</p>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-orange-600 mb-2 group-hover:text-slate-900 transition-colors">Q: {faq.Ques}</h4>
+                      <p className="text-sm font-medium text-slate-500 leading-relaxed pl-4 border-l border-slate-200 group-hover:border-orange-600 transition-colors">{faq.Ans}</p>
                     </div>
                   ))}
                 </div>
