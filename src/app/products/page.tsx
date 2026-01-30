@@ -1,109 +1,83 @@
-"use client";
-
-import { useEffect, useRef, useState, use, Suspense } from "react";
-import { getAllProducts, getStrapiMedia } from "@/lib/strapi";
+import React from "react";
 import Card from "@/app/components/ui/Card";
-import Filter from "@/app/components/ui/Filter";
-import Search from "@/app/components/ui/Search";
-import gsap from "gsap";
+import { getAllProducts, getStrapiMedia, type StrapiProduct } from "@/lib/strapi";
 
-export default function ProductsPage({ searchParams }: { searchParams: Promise<{ query?: string; category?: string }> }) {
-  const resolvedParams = use(searchParams);
-  const query = resolvedParams.query;
-  const category = resolvedParams.category;
+// 1. Force dynamic rendering so new products appear instantly
+export const dynamic = 'force-dynamic';
 
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      const data = await getAllProducts(50, category, query);
-      setProducts(data || []);
-      setLoading(false);
-    }
-    fetchData();
-  }, [category, query]);
-
-  useEffect(() => {
-    if (loading || !products.length) return;
-    const ctx = gsap.context(() => {
-      gsap.from(".product-card", { 
-        y: 20, 
-        opacity: 0, 
-        duration: 0.5, 
-        stagger: 0.05, 
-        ease: "power2.out" 
-      });
-    }, gridRef);
-    return () => ctx.revert();
-  }, [loading, products]);
+export default async function AllProductsPage() {
+  // 2. Fetch ALL products (limit set to 100 for now)
+  const products = await getAllProducts(100);
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* 1. Header Hero Section */}
-      <section className="bg-zinc-950 pt-32 pb-20 px-6 lg:px-12">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-5xl font-black uppercase text-white sm:text-7xl mb-4">
-            The <span className="text-orange-500">Catalogue</span>
-          </h1>
-          <p className="text-zinc-400 max-w-xl text-sm font-medium leading-relaxed uppercase tracking-widest">
-            Explore our complete collection of heritage grains and experimental studio releases.
-          </p>
+    <main className="min-h-screen bg-white pt-32 pb-24">
+      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+        
+        {/* Header */}
+        <div className="mb-20 max-w-2xl">
+           <span className="inline-block text-[10px] font-black uppercase tracking-[0.4em] text-orange-600 mb-4 bg-orange-50 px-3 py-1 rounded-full">
+              Full Catalogue
+           </span>
+           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-zinc-950 mb-6">
+             The <span className="text-zinc-300">Collection</span>
+           </h1>
+           <p className="text-lg font-medium text-zinc-500 leading-relaxed">
+             A complete archive of our premium agricultural exports. Meticulously processed and graded for the global market.
+           </p>
         </div>
-      </section>
 
-      {/* 2. Interactive Toolbar (Search & Filter) */}
-      <section className="sticky top-0 z-30 border-b border-zinc-100 bg-white/80 backdrop-blur-md px-6 py-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="w-full lg:max-w-md">
-              <Suspense fallback={<div className="h-12 w-full animate-pulse bg-zinc-100 rounded-2xl" />}>
-                <Search />
-              </Suspense>
-            </div>
-            <div className="w-full lg:w-auto">
-              <Suspense fallback={<div className="h-10 w-64 animate-pulse bg-zinc-100 rounded-full" />}>
-                <Filter />
-              </Suspense>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. Products Grid Section */}
-      <section ref={gridRef} className="mx-auto max-w-7xl px-6 py-20">
-        {loading ? (
-          <div className="flex flex-col items-center py-40">
-            <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-orange-500 mb-4" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Refreshing Collection</p>
-          </div>
-        ) : products.length > 0 ? (
+        {/* Product Grid */}
+        {products && products.length > 0 ? (
           <div className="grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((p) => (
-              <div key={p.documentId || p.id} className="product-card">
-                <Card
-                  title={p.Name}
-                  subtitle={p.categories?.[0]?.Name || "Collection"}
-                  imageSrc={getStrapiMedia(p.Image)}
-                  price={p.Price}
-                  href={`/products/${p.documentId || p.id}`}
-                  badges={p.badges}
-                  variants={p.variants}
-                />
-              </div>
-            ))}
+            {products.map((p: StrapiProduct) => {
+              // Extract Category
+              const categoryName = p.categories && p.categories.length > 0 
+                ? (p.categories[0].Name || "Exclusive")
+                : "Exclusive";
+
+              // Get Main Image
+              const mainImageUrl = getStrapiMedia(p.Image);
+
+              // Parse Description (Handle Strapi Blocks or String)
+              let descText = "";
+              const rawDescription = p.Description;
+              if (typeof rawDescription === 'string') {
+                descText = rawDescription;
+              } else if (Array.isArray(rawDescription)) {
+                descText = rawDescription
+                  .map(block => block.children?.map((child: any) => child.text).join(""))
+                  .filter(Boolean)
+                  .join(" ");
+              }
+              const shortDesc = descText.length > 80 ? descText.substring(0, 80) + "..." : descText;
+
+              return (
+                <div key={p.documentId || p.id} className="group relative">
+                  <Card
+                    title={p.Name}
+                    subtitle={categoryName} 
+                    description={shortDesc}
+                    imageSrc={mainImageUrl}
+                    price={p.Price}
+                    href={`/products/${p.documentId || p.id}`}
+                    imageAlt={p.Name}
+                    badges={p.badges} 
+                    
+                    // CRITICAL FIX: Pass ONLY the variants array. 
+                    // This ensures only the 3 specific variants (Steam/Selha/Golden) 
+                    // show up in the circles, effectively "removing" the main one.
+                    variants={p.variants} 
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-40 text-center border-2 border-dashed border-zinc-100 rounded-3xl">
-            <h3 className="text-xl font-black uppercase text-zinc-900 mb-2">No Results Found</h3>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-              Try adjusting your filters or search terms.
-            </p>
+          <div className="py-32 text-center border-2 border-dashed border-zinc-100 rounded-[3rem]">
+             <p className="text-xs font-black uppercase tracking-widest text-zinc-300">No products found</p>
           </div>
         )}
-      </section>
+      </div>
     </main>
   );
 }
