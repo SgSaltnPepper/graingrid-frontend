@@ -3,7 +3,6 @@
 import { useState, useEffect, use, useRef } from "react";
 import Image from "next/image";
 import { getStrapiMedia, getProductById, StrapiVariant, StrapiFAQ } from "@/lib/strapi";
-import Link from "next/link";
 import gsap from "gsap";
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +19,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       const data = await getProductById(id);
       if (data) {
         setProduct(data);
+        // Default to the first actual variant if available
         if (data.variants?.length) setSelectedVariant(data.variants[0]);
       }
       setLoading(false);
@@ -27,7 +27,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     fetchProduct();
   }, [id]);
 
-  // Animation Trigger: Runs whenever selectedVariant changes
+  // Initial Animation (Fade In on Load)
   useEffect(() => {
     if (imageContainerRef.current && !loading) {
       gsap.fromTo(
@@ -43,14 +43,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         }
       );
     }
-  }, [selectedVariant, loading]);
+  }, [loading]);
 
   const handleVariantChange = (variant: StrapiVariant) => {
     // Prevent animation if clicking the same variant
     if (selectedVariant?.id === variant.id) return;
 
     if (imageContainerRef.current) {
-      // Animate OUT
+      // 1. Animate OUT
       gsap.to(imageContainerRef.current, {
         opacity: 0,
         y: -10,
@@ -58,17 +58,29 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         duration: 0.3,
         ease: "power2.in",
         onComplete: () => {
-          // Change State only after old image is gone
+          // 2. Change State (Swap Image)
           setSelectedVariant(variant);
+          
+          // 3. Animate IN
+          gsap.fromTo(imageContainerRef.current, {
+             opacity: 0,
+             y: 10,
+             filter: "blur(5px)",
+          }, {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 0.4,
+            ease: "power2.out"
+          });
         }
       });
     } else {
-      // Fallback if ref is missing
       setSelectedVariant(variant);
     }
   };
 
-  // Helper to parse the Label/Value strings from your JSON into a table
+  // Helper to parse the Label/Value strings into a table
   const renderSpecs = (variant: StrapiVariant) => {
     if (!variant.Label || !variant.Value) return null;
     const labels = variant.Label.split('\n');
@@ -125,7 +137,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {product.Name}
             </h1>
 
-            {/* Variant Selector */}
+            {/* Variant Selector Buttons */}
             <div className="mb-10">
               <p className="mb-4 text-[9px] font-black uppercase tracking-widest text-slate-400">Processing Variant</p>
               <div className="flex flex-wrap gap-2">
@@ -145,11 +157,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               </div>
             </div>
 
-            {/* Dynamic Description & Specs */}
+            {/* Description & Specs */}
             <div className="mb-12">
               <p className="mb-3 text-[9px] font-black uppercase tracking-widest text-orange-600">Overview</p>
-              <div className="relative min-h-[100px]">
-                 {/* Key forces React to re-animate text if needed, but we rely on simple re-render here */}
+              <div className="relative min-h-[80px]">
                  <p className="text-base leading-relaxed text-slate-600 border-l-2 border-orange-100 pl-5 transition-all duration-300">
                     {selectedVariant?.Description || product.Description}
                  </p>
@@ -157,7 +168,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {selectedVariant && renderSpecs(selectedVariant)}
             </div>
 
-            {/* Product FAQs Section */}
+            {/* FAQs */}
             {product.FAQs?.length > 0 && (
               <div className="mt-12 border-t border-slate-100 pt-12">
                 <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-8">Frequently Asked Questions</h3>
