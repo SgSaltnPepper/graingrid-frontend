@@ -7,14 +7,14 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-// Register GSAP plugins
+// Register GSAP plugins safely
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
 const testimonials = [
   {
-    image: "/person-2.jpg", // Matches your public folder
+    image: "/person 2.jpg", 
     title: "Best Basmati Rice Supplier!",
     text: "As a local business in India, GrainGrid has been our go-to supplier for Basmati Rice exports. Their dedication to supporting local farmers, promoting sustainable practices, and delivering premium rice has made them the best in the industry.",
     author: "Priya",
@@ -22,7 +22,7 @@ const testimonials = [
     accent: "orange", 
   },
   {
-    image: "/person-1.jpg", // Matches your public folder
+    image: "/person 1.jpg",
     title: "Unparalleled Customer Service",
     text: "GrainGrid goes above and beyond to ensure customer satisfaction. Their team is responsive, knowledgeable, and always ready to assist. Their commitment to customer service sets them apart in the industry.",
     author: "Michael",
@@ -30,7 +30,7 @@ const testimonials = [
     accent: "green",
   },
   {
-    image: "/person-3.jpg", // Matches your public folder
+    image: "/person 3.jpg",
     title: "Reliable Partner for Rice Exports",
     text: "We have been partnering with GrainGrid for our Basmati Rice imports, and they have never failed to deliver. Their commitment to on-time shipments, competitive pricing, and excellent customer support make them a reliable partner.",
     author: "Sarah",
@@ -41,37 +41,45 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Initialize with empty array to avoid null errors
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useGSAP(() => {
     // 1. Header Animation
-    gsap.from(".section-header", {
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 80%",
-      },
-      y: 50,
-      opacity: 0,
-      duration: 1,
-      ease: "power3.out",
-    });
+    gsap.fromTo(".section-header", 
+      { y: 50, opacity: 0 },
+      {
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 85%", // Trigger slightly earlier for better visibility
+        },
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        ease: "power3.out",
+      }
+    );
 
-    // 2. Cards Stagger Entrance
-    gsap.from(cardsRef.current, {
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 70%",
-      },
-      y: 100,
-      opacity: 1,
-      duration: 1.2,
-      stagger: 0.2, 
-      ease: "elastic.out(1, 0.75)", 
-    });
+    // 2. Cards Stagger Entrance - Using fromTo ensures final state is 100% visible
+    gsap.fromTo(cardsRef.current, 
+      { y: 100, opacity: 0 },
+      {
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 75%",
+        },
+        y: 0,
+        opacity: 1,
+        duration: 1.2,
+        stagger: 0.2, 
+        ease: "elastic.out(1, 0.75)", 
+      }
+    );
   }, { scope: containerRef });
 
   // Hover Effect: Float Up
   const handleMouseEnter = (index: number) => {
+    if(!cardsRef.current[index]) return;
     gsap.to(cardsRef.current[index], {
       y: -15, 
       scale: 1.02,
@@ -83,6 +91,7 @@ const TestimonialsSection = () => {
 
   // Hover Effect: Reset
   const handleMouseLeave = (index: number) => {
+    if(!cardsRef.current[index]) return;
     gsap.to(cardsRef.current[index], {
       y: 0,
       scale: 1,
@@ -93,16 +102,18 @@ const TestimonialsSection = () => {
   };
 
   return (
-    <section ref={containerRef} className="py-24 bg-linear-to-b from-zinc-50 to-orange-50/50 overflow-hidden">
+    // FIXED: changed 'bg-linear-to-b' to standard 'bg-gradient-to-b'
+    <section ref={containerRef} className="py-24 bg-gradient-to-b from-zinc-50 to-orange-50/50 overflow-hidden min-h-[50vh]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* Main Title */}
-        <div className="section-header flex flex-col items-center mb-24 text-center">
+        <div className="section-header flex flex-col items-center mb-24 text-center opacity-0 translate-y-10">
           <span className="inline-block py-1 px-3 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
             Testimonials
           </span>
           <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-zinc-900 leading-none">
-            Client <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-600 to-amber-500">Stories</span>
+            {/* FIXED: changed 'bg-linear-to-r' to 'bg-gradient-to-r' */}
+            Client <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500">Stories</span>
           </h2>
           <p className="mt-6 text-lg text-zinc-500 max-w-2xl">
             Real experiences from partners across the globe who trust us with their agricultural needs.
@@ -126,33 +137,34 @@ const TestimonialsSection = () => {
             return (
               <div
                 key={index}
+                // Ensure array index exists before assigning
                 ref={(el) => { if (el) cardsRef.current[index] = el; }}
                 onMouseEnter={() => handleMouseEnter(index)}
                 onMouseLeave={() => handleMouseLeave(index)}
-                className={`group relative bg-white rounded-[2.5rem] border-2 ${borderColor} p-8 pt-20 text-center shadow-lg transition-colors duration-300`}
+                // Added 'opacity-0' initially to match GSAP start state to prevent flash
+                className={`group relative bg-white rounded-[2.5rem] border-2 ${borderColor} p-8 pt-20 text-center shadow-lg transition-colors duration-300 opacity-0`}
               >
                 {/* Floating Avatar Section */}
                 <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 z-10">
                   <div className={`relative p-2 rounded-full bg-white shadow-xl`}>
                     <div className={`w-28 h-28 rounded-full flex items-center justify-center ${circleColor} relative overflow-hidden`}>
                       
-                      {/* Decorative Quotation Marks */}
                       <Quote className="absolute top-4 left-4 text-white/20 w-6 h-6 rotate-180" />
                       <Quote className="absolute bottom-4 right-4 text-white/20 w-6 h-6" />
                       
-                      {/* Image Container */}
                       <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-100 border-4 border-white/30 relative z-20">
-                        {/* ENABLED IMAGE COMPONENT */}
-                        <Image
-                          src={testimonial.image}
-                          alt={testimonial.author}
-                          fill
-                          className="object-cover"
-                        />
+                         {/* Enabled Image */}
+                         <Image
+                           src={testimonial.image}
+                           alt={testimonial.author}
+                           fill
+                           className="object-cover"
+                           // Added unoptimized to prevent Vercel optimization issues on external images
+                           unoptimized 
+                         />
                       </div>
                     </div>
                     
-                    {/* Badge */}
                     <div className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md">
                         <div className={`w-4 h-4 rounded-full ${circleColor} animate-pulse`}></div>
                     </div>
