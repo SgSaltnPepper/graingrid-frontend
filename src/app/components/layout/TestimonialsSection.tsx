@@ -14,7 +14,7 @@ if (typeof window !== "undefined") {
 
 const testimonials = [
   {
-    image: "/person 2.jpg", // Matches your public folder
+    image: "/person-2.jpg", // Matches your public folder
     title: "Best Basmati Rice Supplier!",
     text: "As a local business in India, GrainGrid has been our go-to supplier for Basmati Rice exports. Their dedication to supporting local farmers, promoting sustainable practices, and delivering premium rice has made them the best in the industry.",
     author: "Priya",
@@ -22,7 +22,7 @@ const testimonials = [
     accent: "orange", 
   },
   {
-    image: "/person 1.jpg", // Matches your public folder
+    image: "/person-1.jpg", // Matches your public folder
     title: "Unparalleled Customer Service",
     text: "GrainGrid goes above and beyond to ensure customer satisfaction. Their team is responsive, knowledgeable, and always ready to assist. Their commitment to customer service sets them apart in the industry.",
     author: "Michael",
@@ -30,7 +30,7 @@ const testimonials = [
     accent: "green",
   },
   {
-    image: "/person 3.jpg", // Matches your public folder
+    image: "/person-3.jpg", // Matches your public folder
     title: "Reliable Partner for Rice Exports",
     text: "We have been partnering with GrainGrid for our Basmati Rice imports, and they have never failed to deliver. Their commitment to on-time shipments, competitive pricing, and excellent customer support make them a reliable partner.",
     author: "Sarah",
