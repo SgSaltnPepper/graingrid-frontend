@@ -14,25 +14,25 @@ if (typeof window !== "undefined") {
 
 const testimonials = [
   {
-    image: "/placeholder-person-1.jpg", 
+    image: "/person 2.jpg", // Matches your public folder
     title: "Best Basmati Rice Supplier!",
-    text: "As a local business in India, Rice Master Global has been our go-to supplier for Basmati Rice exports. Their dedication to supporting local farmers, promoting sustainable practices, and delivering premium rice has made them the best in the industry.",
+    text: "As a local business in India, GrainGrid has been our go-to supplier for Basmati Rice exports. Their dedication to supporting local farmers, promoting sustainable practices, and delivering premium rice has made them the best in the industry.",
     author: "Priya",
     location: "India",
-    accent: "orange", // Custom color accent for vibrancy
+    accent: "orange", 
   },
   {
-    image: "/placeholder-person-2.jpg",
+    image: "/person 1.jpg", // Matches your public folder
     title: "Unparalleled Customer Service",
-    text: "Rice Master Global goes above and beyond to ensure customer satisfaction. Their team is responsive, knowledgeable, and always ready to assist. Their commitment to customer service sets them apart in the industry.",
+    text: "GrainGrid goes above and beyond to ensure customer satisfaction. Their team is responsive, knowledgeable, and always ready to assist. Their commitment to customer service sets them apart in the industry.",
     author: "Michael",
     location: "Glasgow, Scotland",
     accent: "green",
   },
   {
-    image: "/placeholder-person-3.jpg",
+    image: "/person 3.jpg", // Matches your public folder
     title: "Reliable Partner for Rice Exports",
-    text: "We have been partnering with Rice Master Global for our Basmati Rice imports, and they have never failed to deliver. Their commitment to on-time shipments, competitive pricing, and excellent customer support make them a reliable partner.",
+    text: "We have been partnering with GrainGrid for our Basmati Rice imports, and they have never failed to deliver. Their commitment to on-time shipments, competitive pricing, and excellent customer support make them a reliable partner.",
     author: "Sarah",
     location: "UAE",
     accent: "blue",
@@ -65,15 +65,15 @@ const TestimonialsSection = () => {
       y: 100,
       opacity: 0,
       duration: 1.2,
-      stagger: 0.2, // Cards appear one after another
-      ease: "elastic.out(1, 0.75)", // Bouncy entrance
+      stagger: 0.2, 
+      ease: "elastic.out(1, 0.75)", 
     });
   }, { scope: containerRef });
 
   // Hover Effect: Float Up
   const handleMouseEnter = (index: number) => {
     gsap.to(cardsRef.current[index], {
-      y: -15, // Moves up
+      y: -15, 
       scale: 1.02,
       boxShadow: "0px 20px 40px rgba(0,0,0,0.15)",
       duration: 0.4,
@@ -113,7 +113,6 @@ const TestimonialsSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-24 gap-x-10 mt-12">
           {testimonials.map((testimonial, index) => {
             
-            // Dynamic coloring based on accent prop
             const borderColor = 
               testimonial.accent === "orange" ? "border-orange-200 hover:border-orange-500" :
               testimonial.accent === "green" ? "border-green-200 hover:border-green-500" :
@@ -137,26 +136,23 @@ const TestimonialsSection = () => {
                   <div className={`relative p-2 rounded-full bg-white shadow-xl`}>
                     <div className={`w-28 h-28 rounded-full flex items-center justify-center ${circleColor} relative overflow-hidden`}>
                       
-                      {/* Decorative Quotation Marks inside Circle */}
+                      {/* Decorative Quotation Marks */}
                       <Quote className="absolute top-4 left-4 text-white/20 w-6 h-6 rotate-180" />
                       <Quote className="absolute bottom-4 right-4 text-white/20 w-6 h-6" />
                       
                       {/* Image Container */}
                       <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-100 border-4 border-white/30 relative z-20">
-                         {/* Replace with <Image /> in production */}
-                         <div className="w-full h-full flex items-center justify-center bg-zinc-200 text-zinc-400 font-bold text-xs uppercase">
-                            IMG
-                         </div>
-                        {/* <Image
+                        {/* ENABLED IMAGE COMPONENT */}
+                        <Image
                           src={testimonial.image}
                           alt={testimonial.author}
                           fill
                           className="object-cover"
-                        /> */}
+                        />
                       </div>
                     </div>
                     
-                    {/* Tiny Decorative Badge */}
+                    {/* Badge */}
                     <div className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-md">
                         <div className={`w-4 h-4 rounded-full ${circleColor} animate-pulse`}></div>
                     </div>
