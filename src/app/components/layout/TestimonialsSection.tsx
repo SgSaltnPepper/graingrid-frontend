@@ -171,7 +171,7 @@ const TestimonialsSection = () => {
                   </div>
                 </div>
 
-                {/* Content */}
+                {/* Content  */}
                 <div className="relative z-0">
                   <Quote className="w-10 h-10 text-zinc-100 mx-auto mb-4" />
                   
