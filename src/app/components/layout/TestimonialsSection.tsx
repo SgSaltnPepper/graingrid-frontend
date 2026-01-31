@@ -63,7 +63,7 @@ const TestimonialsSection = () => {
         start: "top 70%",
       },
       y: 100,
-      opacity: 0,
+      opacity: 1,
       duration: 1.2,
       stagger: 0.2, 
       ease: "elastic.out(1, 0.75)", 
