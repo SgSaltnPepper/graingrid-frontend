@@ -204,7 +204,7 @@ export default function Navbar() {
           <div className="space-y-12">
             <div className="mobile-li">
                 <div className="mb-8">
-                    {/* Mobile Search Bar - Wrapped in Suspense */}
+                    {/* Mobile Search Bar -H Wrapped in Suspense */}
                     <Suspense fallback={<div className="w-full h-10 bg-zinc-800 rounded-full animate-pulse" />}>
                         <Search />
                     </Suspense>
