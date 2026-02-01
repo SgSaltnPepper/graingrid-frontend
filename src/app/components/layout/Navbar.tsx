@@ -3,20 +3,21 @@
 import LinkNext from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { getCategories, getPremiumProduct, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
 import { 
   ChevronDown, 
   Menu, 
   X, 
-  ChevronRight, // For mobile accordion
-  ArrowRight    // ADDED THIS: For 'Inquire Now' button
+  ChevronRight, 
+  ArrowRight
 } from "lucide-react";
 import { FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa6";
 import gsap from "gsap";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
-  // "About" is handled separately
+  // Products is handled dynamically
+  // About is handled statically
   { label: "Contact", href: "/contact" },
 ] as const;
 
@@ -32,13 +33,31 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // State for the desktop hover dropdown
+  // State for dropdowns
+  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
   const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
-  // State for mobile accordion toggle
+  
+  // State for mobile accordions
+  const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
 
+  const [categories, setCategories] = useState<StrapiCategory[]>([]);
+  
   const pathname = usePathname();
   const mobileOverlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Fetch categories for the Products dropdown
+        const catData = await getCategories();
+        setCategories(catData || []);
+      } catch (error) {
+        console.error("Navbar data fetch failed:", error);
+      }
+    }
+    loadData();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -64,9 +83,16 @@ export default function Navbar() {
   // Reset all states when route changes
   useEffect(() => { 
     setOpen(false); 
+    setProductsDropdownOpen(false);
     setAboutDropdownOpen(false);
+    setMobileProductsOpen(false);
     setMobileAboutOpen(false);
   }, [pathname]);
+
+  // Filter out sub-types to keep the main menu clean (Rice covers basmati/non-basmati)
+  const topLevelCategories = categories.filter(cat => 
+    !['Basmati Rice', 'Non-Basmati Rice'].includes(cat.Name)
+  );
 
   return (
     <>
@@ -96,14 +122,50 @@ export default function Navbar() {
                     </LinkNext>
                 </li>
 
-                {/* 2. Products Link */}
-                <li className="relative py-2">
-                    <LinkNext href="/products" className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname === '/products' ? "text-orange-600" : "text-zinc-500"}`}>
+                {/* 2. Products Dropdown (Dynamic from Strapi) */}
+                <li 
+                  className="relative py-2 group"
+                  onMouseEnter={() => setProductsDropdownOpen(true)}
+                  onMouseLeave={() => setProductsDropdownOpen(false)}
+                >
+                    <LinkNext 
+                        href="/products" 
+                        className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname.startsWith('/products') ? "text-orange-600" : "text-zinc-500"}`}
+                    >
                       Products
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${productsDropdownOpen ? "rotate-180" : ""}`} />
                     </LinkNext>
+
+                    {/* Products Dropdown Menu */}
+                    <div 
+                      className={`absolute top-full left-1/2 -translate-x-1/2 pt-4 w-56 transition-all duration-300 ${
+                        productsDropdownOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-2 invisible"
+                      }`}
+                    >
+                      <div className="bg-white border border-zinc-100 shadow-xl rounded-2xl overflow-hidden p-2">
+                        {/* 'All Products' Link */}
+                        <LinkNext 
+                            href="/products"
+                            className="block px-4 py-3 text-xs font-bold text-zinc-900 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-colors border-b border-zinc-50 mb-1"
+                        >
+                            View All Products
+                        </LinkNext>
+                        
+                        {/* Dynamic Categories */}
+                        {topLevelCategories.map((cat) => (
+                          <LinkNext 
+                            key={cat.id}
+                            href={`/products?category=${cat.Name}`}
+                            className="block px-4 py-3 text-xs font-bold text-zinc-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-colors"
+                          >
+                            {cat.Name}
+                          </LinkNext>
+                        ))}
+                      </div>
+                    </div>
                 </li>
 
-                {/* 3. About Us Dropdown */}
+                {/* 3. About Us Dropdown (Static) */}
                 <li 
                   className="relative py-2 group"
                   onMouseEnter={() => setAboutDropdownOpen(true)}
@@ -114,7 +176,7 @@ export default function Navbar() {
                       <ChevronDown size={14} className={`transition-transform duration-300 ${aboutDropdownOpen ? "rotate-180" : ""}`} />
                     </button>
 
-                    {/* Dropdown Menu */}
+                    {/* About Dropdown Menu */}
                     <div 
                       className={`absolute top-full left-1/2 -translate-x-1/2 pt-4 w-64 transition-all duration-300 ${
                         aboutDropdownOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-2 invisible"
@@ -168,15 +230,41 @@ export default function Navbar() {
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 mb-8">Main Navigation</p>
               <div className="flex flex-col gap-6">
                 
-                {/* Standard Links */}
+                {/* 1. Home Link */}
                 <LinkNext href="/" className="text-5xl font-black uppercase tracking-tighter text-white hover:text-orange-500 transition-colors">
                   Home
                 </LinkNext>
-                <LinkNext href="/products" className="text-5xl font-black uppercase tracking-tighter text-white hover:text-orange-500 transition-colors">
-                  Products
-                </LinkNext>
 
-                {/* Mobile About Accordion */}
+                {/* 2. Mobile Products Accordion */}
+                <div>
+                  <button 
+                    onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
+                    className="flex items-center justify-between w-full text-5xl font-black uppercase tracking-tighter text-white hover:text-orange-500 transition-colors"
+                  >
+                    Products
+                    <ChevronRight size={32} className={`transition-transform duration-300 ${mobileProductsOpen ? "rotate-90 text-orange-500" : ""}`} />
+                  </button>
+                  
+                  {/* Products Sub-menu */}
+                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${mobileProductsOpen ? "max-h-96 opacity-100 mt-6" : "max-h-0 opacity-0"}`}>
+                    <div className="flex flex-col gap-4 pl-4 border-l-2 border-zinc-800">
+                        <LinkNext href="/products" className="text-xl font-bold text-white hover:text-orange-500 transition-colors">
+                            View All Products
+                        </LinkNext>
+                        {topLevelCategories.map((cat) => (
+                            <LinkNext 
+                            key={cat.id} 
+                            href={`/products?category=${cat.Name}`}
+                            className="text-xl font-bold text-zinc-400 hover:text-white transition-colors"
+                            >
+                            {cat.Name}
+                            </LinkNext>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Mobile About Accordion */}
                 <div>
                   <button 
                     onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
@@ -186,7 +274,7 @@ export default function Navbar() {
                     <ChevronRight size={32} className={`transition-transform duration-300 ${mobileAboutOpen ? "rotate-90 text-orange-500" : ""}`} />
                   </button>
                   
-                  {/* Sub-menu items */}
+                  {/* About Sub-menu */}
                   <div className={`overflow-hidden transition-all duration-500 ease-in-out ${mobileAboutOpen ? "max-h-96 opacity-100 mt-6" : "max-h-0 opacity-0"}`}>
                     <div className="flex flex-col gap-4 pl-4 border-l-2 border-zinc-800">
                       {ABOUT_DROPDOWN.map((item) => (
@@ -202,6 +290,7 @@ export default function Navbar() {
                   </div>
                 </div>
 
+                {/* 4. Contact Link */}
                 <LinkNext href="/contact" className="text-5xl font-black uppercase tracking-tighter text-white hover:text-orange-500 transition-colors">
                   Contact
                 </LinkNext>
