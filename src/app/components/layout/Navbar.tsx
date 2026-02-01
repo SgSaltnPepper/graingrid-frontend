@@ -103,7 +103,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className={`fixed top-0 z-[100] w-full transition-all duration-500 ${scrolled ? "py-4" : "py-8"}`}>
+      <header className={`fixed top-0 z-100 w-full transition-all duration-500 ${scrolled ? "py-4" : "py-8"}`}>
         {/* UPDATED: Changed 'max-w-7xl' to 'w-full' and adjusted padding for full width */}
         <nav className={`mx-auto flex w-full items-center justify-between px-6 lg:px-12 transition-all duration-500 rounded-full border border-zinc-200/50 ${scrolled ? "bg-white/80 backdrop-blur-2xl shadow-2xl py-3 mx-4 w-auto lg:w-[98%] lg:mx-auto" : "bg-white py-5 mx-6 lg:mx-0 lg:w-full lg:rounded-none lg:border-none"}`}>
           <LinkNext href="/" className="group flex items-center gap-2 pl-2">
@@ -134,7 +134,7 @@ export default function Navbar() {
             {/* TOGGLE BUTTON: High Z-Index to stay above overlay */}
             <button 
               type="button" 
-              className={`relative z-[110] flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-500 lg:hidden ${open ? "bg-white text-zinc-950 rotate-90" : "bg-zinc-950 text-white"}`} 
+              className={`relative z-110 flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-500 lg:hidden ${open ? "bg-white text-zinc-950 rotate-90" : "bg-zinc-950 text-white"}`} 
               onClick={() => setOpen(!open)}
               aria-label="Toggle Menu"
             >
