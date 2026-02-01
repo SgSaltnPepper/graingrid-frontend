@@ -12,9 +12,12 @@ interface ProductsPageProps {
 
 export default async function AllProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedParams = await searchParams;
+  // Ensure categoryFilter is a string and not an array
   const categoryFilter = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
 
-  // 2. Fetch products (Removed search term argument)
+  // 2. Fetch products
+  // The backend (Strapi) must handle the filtering logic.
+  // If categoryFilter is "Basmati Rice", it should only return items with that specific category relation.
   const products = await getAllProducts(100, categoryFilter);
 
   return (
@@ -25,7 +28,7 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
         {/* Header */}
         <div className="mb-12 max-w-4xl mx-auto lg:mx-0">
            <span className="inline-block text-[10px] font-black uppercase tracking-[0.4em] text-orange-600 mb-4 bg-orange-50 px-3 py-1 rounded-full">
-              Full Catalogue
+              {categoryFilter ? categoryFilter : "Full Catalogue"}
            </span>
            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-zinc-950 mb-4">
              The <span className="text-zinc-300">Collection</span>
@@ -44,10 +47,11 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                 {products && products.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
                     {products.map((p: StrapiProduct) => {
-                    const categoryName = p.categories && p.categories.length > 0 
-                        ? (p.categories[0].Name || "Exclusive")
-                        : "Exclusive";
-
+                    // Logic to display the most relevant category name on the card
+                    // If we are filtering by "Basmati Rice", show that. 
+                    // Otherwise show the first category.
+                    const primaryCategory = p.categories && p.categories.length > 0 ? p.categories[0].Name : "Exclusive";
+                    
                     const mainImageUrl = getStrapiMedia(p.Image);
 
                     let descText = "";
@@ -56,7 +60,7 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                         descText = rawDescription;
                     } else if (Array.isArray(rawDescription)) {
                         descText = rawDescription
-                        .map(block => block.children?.map((child: any) => child.text).join(""))
+                        .map((block: any) => block.children?.map((child: any) => child.text).join(""))
                         .filter(Boolean)
                         .join(" ");
                     }
@@ -66,7 +70,7 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                         <div key={p.documentId || p.id} className="group relative">
                         <Card
                             title={p.Name}
-                            subtitle={categoryName} 
+                            subtitle={primaryCategory} 
                             description={shortDesc}
                             imageSrc={mainImageUrl}
                             price={p.Price}
@@ -86,7 +90,11 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                         <span className="text-2xl">🌾</span>
                     </div>
                     <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2">No products found</p>
-                    <p className="text-zinc-400 text-sm">Try selecting a different category.</p>
+                    <p className="text-zinc-400 text-sm">
+                        {categoryFilter 
+                            ? `No items found for "${categoryFilter}".` 
+                            : "Try selecting a different category."}
+                    </p>
                 </div>
                 )}
             </div>
