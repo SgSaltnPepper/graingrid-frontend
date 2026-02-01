@@ -198,7 +198,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay Hello */}
       <div ref={mobileOverlayRef} className="fixed inset-0 z-90 flex flex-col bg-zinc-950 px-8 pt-40 pb-12 overflow-y-auto" style={{ clipPath: "circle(0% at 92% 5%)", pointerEvents: "none" }}>
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-12">
