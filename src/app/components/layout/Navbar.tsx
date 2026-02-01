@@ -4,9 +4,9 @@ import LinkNext from "next/link";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { getCategories, getPremiumProduct, getStrapiMedia, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
-// 1. Remove deprecated lucide icons, keep UI icons
+// 1. Remove deprecated lucide icons
 import { ChevronRight, ChevronDown, Menu, X, ArrowRight } from "lucide-react";
-// 2. Use react-icons for Brands (Standard fix for deprecation warning)
+// 2. Use react-icons for Brands
 import { FaInstagram, FaTwitter, FaLinkedin, FaFacebook } from "react-icons/fa6";
 import gsap from "gsap";
 import Search from "../ui/Search"; 
@@ -252,6 +252,7 @@ export default function Navbar() {
           </div>
           <div className="mobile-li flex items-center justify-between pt-12 border-t border-white/10 mt-12">
             <div className="flex gap-8">
+              {/* Updated to use React Icons */}
               <FaInstagram className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
               <FaTwitter className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
               <FaLinkedin className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
