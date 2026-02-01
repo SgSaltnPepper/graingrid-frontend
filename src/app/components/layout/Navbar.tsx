@@ -1,15 +1,12 @@
 "use client";
 
 import LinkNext from "next/link";
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { getCategories, getPremiumProduct, getStrapiMedia, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
-// 1. Remove deprecated lucide icons
 import { ChevronRight, ChevronDown, Menu, X, ArrowRight } from "lucide-react";
-// 2. Use react-icons for Brands
-import { FaInstagram, FaTwitter, FaLinkedin, FaFacebook } from "react-icons/fa6";
+import { FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa6";
 import gsap from "gsap";
-import Search from "../ui/Search"; 
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -106,6 +103,7 @@ export default function Navbar() {
             </span>
           </LinkNext>
 
+          {/* Centered Nav Links (Search Removed) */}
           <div className="hidden lg:flex items-center gap-8">
              <ul className="flex items-center gap-8">
                 {NAV_LINKS.map((l) => (
@@ -117,13 +115,6 @@ export default function Navbar() {
                 </li>
                 ))}
              </ul>
-             
-             {/* Desktop Search Bar - WRAPPED IN SUSPENSE TO FIX BUILD ERROR */}
-             <div className="w-64">
-                <Suspense fallback={<div className="w-full h-10 bg-zinc-100 rounded-full animate-pulse" />}>
-                    <Search />
-                </Suspense>
-             </div>
           </div>
 
           <div className="flex items-center gap-4 pr-2">
@@ -206,12 +197,7 @@ export default function Navbar() {
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-12">
             <div className="mobile-li">
-                <div className="mb-8">
-                    {/* Mobile Search Bar - Wrapped in Suspense */}
-                    <Suspense fallback={<div className="w-full h-10 bg-zinc-800 rounded-full animate-pulse" />}>
-                        <Search />
-                    </Suspense>
-                </div>
+                {/* Search Removed from here too */}
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 mb-8">Main Navigation</p>
               <div className="flex flex-col gap-6">
                 {NAV_LINKS.map((link) => (
@@ -252,7 +238,6 @@ export default function Navbar() {
           </div>
           <div className="mobile-li flex items-center justify-between pt-12 border-t border-white/10 mt-12">
             <div className="flex gap-8">
-              {/* Updated to use React Icons */}
               <FaInstagram className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
               <FaTwitter className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
               <FaLinkedin className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
