@@ -19,6 +19,9 @@ export interface StrapiCategory {
   documentId: string;
   Name: string;
   CatImage?: any;
+  // UPDATE: Added support for subcategories and parent
+  subcategories?: StrapiCategory[];
+  parent?: StrapiCategory;
 }
 
 export interface StrapiFAQ {
@@ -107,7 +110,24 @@ export function getStrapiMedia(data: any) {
 // --- API Methods ---
 
 export async function getCategories(): Promise<StrapiCategory[]> {
-  const query = qs.stringify({ populate: ['CatImage'], sort: ['Name:asc'] });
+  // UPDATE: We now populate 'subcategories' to get the hierarchy
+  // We also filter for categories that have NO parent (top-level only)
+  // so we don't get "Basmati" appearing twice (once inside "Rice" and once alone).
+  const query = qs.stringify({ 
+    populate: {
+        CatImage: { populate: '*' },
+        subcategories: { populate: '*' } // Fetch the children!
+    },
+    filters: {
+        parent: {
+            id: {
+                $null: true // Only get Top Level categories (Like "Rice")
+            }
+        }
+    },
+    sort: ['Name:asc'] 
+  }, { encodeValuesOnly: true });
+
   const res = await fetchStrapi(`/categories?${query}`);
   return Array.isArray(res) ? res : [];
 }
@@ -123,6 +143,7 @@ export async function getAllProducts(limit = 50, categoryName?: string, searchTe
     },
     filters: {
       $and: [
+        // Updated logic to allow searching by category Name OR sub-category Name if needed
         categoryName && categoryName !== 'All' ? { categories: { Name: { $containsi: categoryName } } } : {},
         searchTerm ? { Name: { $containsi: searchTerm } } : {},
       ].filter(f => Object.keys(f).length > 0)

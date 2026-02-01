@@ -9,13 +9,13 @@ import ScrollProvider from "./components/providers/ScrollProviders";
 const jost = Jost({
   variable: "--font-jost",
   subsets: ["latin"],
-  display: "swap", // Best for performance (text doesn't vanish while loading)
-  weight: ["300", "400", "500", "700", "900"], // Load specific weights to save size
+  display: "swap", 
+  weight: ["300", "400", "500", "700", "900"], 
 });
 
-// 2. Define Viewport (Separated in Next.js 14+)
+// 2. Define Viewport
 export const viewport: Viewport = {
-  themeColor: "#ea580c", // Matches your orange-600 brand color
+  themeColor: "#ea580c", 
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -23,12 +23,11 @@ export const viewport: Viewport = {
 
 // 3. Ultimate SEO Metadata Configuration
 export const metadata: Metadata = {
-  // Use your actual domain here. This fixes social image sharing issues.
   metadataBase: new URL('https://graingrid-frontend.vercel.app'), 
   
   title: {
     default: "GrainGrid | Premium Agricultural Export",
-    template: "%s | GrainGrid", // Child pages will be "About | GrainGrid"
+    template: "%s | GrainGrid",
   },
   
   description: "Experience the intersection of nature's purity and modern curation. We export premium organic rice, authentic spices, and pulses worldwide.",
@@ -38,7 +37,6 @@ export const metadata: Metadata = {
   generator: "Next.js",
   keywords: ["Organic Rice", "Premium Spices", "Agricultural Export", "Basmati Rice", "Global Trade", "Sustainable Farming", "Wholesale Pulses"],
   
-  // How it looks on Facebook / LinkedIn / WhatsApp
   openGraph: {
     title: "GrainGrid | Premium Agricultural Export",
     description: "Sourcing the finest organic harvests with a commitment to transparency and unmatched quality.",
@@ -48,7 +46,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.jpg", // You should add an image named 'og-image.jpg' to your public folder
+        url: "/og-image.jpg", 
         width: 1200,
         height: 630,
         alt: "GrainGrid Premium Harvests",
@@ -56,15 +54,13 @@ export const metadata: Metadata = {
     ],
   },
 
-  // How it looks on Twitter (X)
   twitter: {
     card: "summary_large_image",
     title: "GrainGrid | Cultivating Excellence",
     description: "Global export of premium organic grains and spices.",
-    images: ["/og-image.jpg"], // Reusing the same image
+    images: ["/og-image.jpg"], 
   },
 
-  // Instructions for Google Bots
   robots: {
     index: true,
     follow: true,
@@ -77,7 +73,6 @@ export const metadata: Metadata = {
     },
   },
 
-  // Icons (Favicon)
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-16x16.png",
@@ -92,14 +87,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${jost.variable} ${jost.className} antialiased bg-zinc-50 text-zinc-900 selection:bg-orange-600 selection:text-white`}>
+      {/* ADDED: overflow-x-hidden to prevent horizontal scrolling issues on mobile */}
+      <body className={`${jost.variable} ${jost.className} antialiased bg-zinc-50 text-zinc-900 selection:bg-orange-600 selection:text-white overflow-x-hidden`}>
         
-        {/* Smooth Scroll Provider (Lenis) */}
         <ScrollProvider>
           <Navbar />
           
-          {/* Main semantic tag helps SEO understand this is the core content */}
-          <main className="min-h-screen relative flex flex-col">
+          {/* REMOVED: Constraints here. We let the page children decide their width. */}
+          <main className="min-h-screen relative flex flex-col w-full">
             {children}
           </main>
           

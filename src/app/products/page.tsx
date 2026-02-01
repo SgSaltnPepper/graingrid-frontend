@@ -1,82 +1,100 @@
 import React from "react";
 import Card from "@/app/components/ui/Card";
+import Filter from "@/app/components/ui/Filter";
 import { getAllProducts, getStrapiMedia, type StrapiProduct } from "@/lib/strapi";
 
-// 1. Force dynamic rendering so new products appear instantly
+// 1. Force dynamic rendering so filtering works instantly
 export const dynamic = 'force-dynamic';
 
-export default async function AllProductsPage() {
-  // 2. Fetch ALL products (limit set to 100 for now)
-  const products = await getAllProducts(100);
+interface ProductsPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function AllProductsPage({ searchParams }: ProductsPageProps) {
+  const resolvedParams = await searchParams;
+  const categoryFilter = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
+
+  // 2. Fetch products
+  const products = await getAllProducts(100, categoryFilter);
 
   return (
-    <main className="min-h-screen bg-white pt-32 pb-24">
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+    <main className="min-h-screen bg-white pt-24 pb-24">
+      {/* Full Width Container */}
+      <div className="w-full px-4 md:px-8 lg:px-12">
         
         {/* Header */}
-        <div className="mb-20 max-w-2xl">
+        <div className="mb-12 max-w-4xl mx-auto lg:mx-0">
            <span className="inline-block text-[10px] font-black uppercase tracking-[0.4em] text-orange-600 mb-4 bg-orange-50 px-3 py-1 rounded-full">
               Full Catalogue
            </span>
-           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-zinc-950 mb-6">
+           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-zinc-950 mb-4">
              The <span className="text-zinc-300">Collection</span>
            </h1>
-           <p className="text-lg font-medium text-zinc-500 leading-relaxed">
-             A complete archive of our premium agricultural exports. Meticulously processed and graded for the global market.
-           </p>
         </div>
 
-        {/* Product Grid */}
-        {products && products.length > 0 ? (
-          <div className="grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((p: StrapiProduct) => {
-              // Extract Category
-              const categoryName = p.categories && p.categories.length > 0 
-                ? (p.categories[0].Name || "Exclusive")
-                : "Exclusive";
+        <div className="flex flex-col lg:flex-row gap-8 relative">
+            
+            {/* Sidebar / Filter Section */}
+            {/* Desktop: Vertical Column | Mobile: Sticky Top Bar */}
+            <aside className="lg:w-1/5 lg:sticky lg:top-28 h-fit z-30">
+                <Filter />
+            </aside>
 
-              // Get Main Image
-              const mainImageUrl = getStrapiMedia(p.Image);
+            {/* Product Grid Section */}
+            <div className="lg:w-4/5">
+                {products && products.length > 0 ? (
+                // UPDATED GRID: grid-cols-2 on mobile (small cards), up to 5 on XL screens
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
+                    {products.map((p: StrapiProduct) => {
+                    const categoryName = p.categories && p.categories.length > 0 
+                        ? (p.categories[0].Name || "Exclusive")
+                        : "Exclusive";
 
-              // Parse Description (Handle Strapi Blocks or String)
-              let descText = "";
-              const rawDescription = p.Description;
-              if (typeof rawDescription === 'string') {
-                descText = rawDescription;
-              } else if (Array.isArray(rawDescription)) {
-                descText = rawDescription
-                  .map(block => block.children?.map((child: any) => child.text).join(""))
-                  .filter(Boolean)
-                  .join(" ");
-              }
-              const shortDesc = descText.length > 80 ? descText.substring(0, 80) + "..." : descText;
+                    const mainImageUrl = getStrapiMedia(p.Image);
 
-              return (
-                <div key={p.documentId || p.id} className="group relative">
-                  <Card
-                    title={p.Name}
-                    subtitle={categoryName} 
-                    description={shortDesc}
-                    imageSrc={mainImageUrl}
-                    price={p.Price}
-                    href={`/products/${p.documentId || p.id}`}
-                    imageAlt={p.Name}
-                    badges={p.badges} 
-                    
-                    // CRITICAL FIX: Pass ONLY the variants array. 
-                    // This ensures only the 3 specific variants (Steam/Selha/Golden) 
-                    // show up in the circles, effectively "removing" the main one.
-                    variants={p.variants} 
-                  />
+                    let descText = "";
+                    const rawDescription = p.Description;
+                    if (typeof rawDescription === 'string') {
+                        descText = rawDescription;
+                    } else if (Array.isArray(rawDescription)) {
+                        descText = rawDescription
+                        .map(block => block.children?.map((child: any) => child.text).join(""))
+                        .filter(Boolean)
+                        .join(" ");
+                    }
+                    // Shorter description for smaller cards
+                    const shortDesc = descText.length > 60 ? descText.substring(0, 60) + "..." : descText;
+
+                    return (
+                        <div key={p.documentId || p.id} className="group relative">
+                        <Card
+                            title={p.Name}
+                            subtitle={categoryName} 
+                            description={shortDesc}
+                            imageSrc={mainImageUrl}
+                            price={p.Price}
+                            href={`/products/${p.documentId || p.id}`}
+                            imageAlt={p.Name}
+                            badges={p.badges} 
+                            variants={p.variants} 
+                            // Optional: Pass class to reduce font sizes inside card for denser grid
+                            className="text-sm"
+                        />
+                        </div>
+                    );
+                    })}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="py-32 text-center border-2 border-dashed border-zinc-100 rounded-[3rem]">
-             <p className="text-xs font-black uppercase tracking-widest text-zinc-300">No products found</p>
-          </div>
-        )}
+                ) : (
+                <div className="py-32 text-center border-2 border-dashed border-zinc-100 rounded-4xl flex flex-col items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-zinc-50 flex items-center justify-center mb-4 text-zinc-300">
+                        <span className="text-2xl">🌾</span>
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2">No products found</p>
+                    <p className="text-zinc-400 text-sm">Try selecting a different category.</p>
+                </div>
+                )}
+            </div>
+        </div>
       </div>
     </main>
   );
