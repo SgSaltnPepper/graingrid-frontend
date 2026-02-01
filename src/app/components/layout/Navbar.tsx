@@ -3,7 +3,7 @@
 import LinkNext from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { getCategories, getPremiumProduct, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
+import { getCategories, type StrapiCategory } from "@/lib/strapi";
 import { 
   ChevronDown, 
   Menu, 
@@ -49,7 +49,6 @@ export default function Navbar() {
   useEffect(() => {
     async function loadData() {
       try {
-        // Fetch categories for the Products dropdown
         const catData = await getCategories();
         setCategories(catData || []);
       } catch (error) {
@@ -89,7 +88,8 @@ export default function Navbar() {
     setMobileAboutOpen(false);
   }, [pathname]);
 
-  // Filter out sub-types to keep the main menu clean (Rice covers basmati/non-basmati)
+  // Filter: Keep standard categories, exclude the sub-rice types from the main list loop
+  // We will manually add them under "Rice"
   const topLevelCategories = categories.filter(cat => 
     !['Basmati Rice', 'Non-Basmati Rice'].includes(cat.Name)
   );
@@ -122,7 +122,7 @@ export default function Navbar() {
                     </LinkNext>
                 </li>
 
-                {/* 2. Products Dropdown (Dynamic from Strapi) */}
+                {/* 2. Products Mega Menu */}
                 <li 
                   className="relative py-2 group"
                   onMouseEnter={() => setProductsDropdownOpen(true)}
@@ -136,36 +136,53 @@ export default function Navbar() {
                       <ChevronDown size={14} className={`transition-transform duration-300 ${productsDropdownOpen ? "rotate-180" : ""}`} />
                     </LinkNext>
 
-                    {/* Products Dropdown Menu */}
+                    {/* Full Width Dropdown */}
                     <div 
-                      className={`absolute top-full left-1/2 -translate-x-1/2 pt-4 w-56 transition-all duration-300 ${
-                        productsDropdownOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 translate-y-2 invisible"
+                      className={`fixed left-0 w-full bg-white border-t border-zinc-100 shadow-xl transition-all duration-300 overflow-hidden ${
+                        productsDropdownOpen ? "opacity-100 visible top-17.5 lg:top-21.25 max-h-125" : "opacity-0 invisible top-20 max-h-0"
                       }`}
+                      style={{ zIndex: 90 }} // Ensure it sits below header but above page content
                     >
-                      <div className="bg-white border border-zinc-100 shadow-xl rounded-2xl overflow-hidden p-2">
-                        {/* 'All Products' Link */}
-                        <LinkNext 
-                            href="/products"
-                            className="block px-4 py-3 text-xs font-bold text-zinc-900 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-colors border-b border-zinc-50 mb-1"
-                        >
-                            View All Products
-                        </LinkNext>
-                        
-                        {/* Dynamic Categories */}
-                        {topLevelCategories.map((cat) => (
-                          <LinkNext 
-                            key={cat.id}
-                            href={`/products?category=${cat.Name}`}
-                            className="block px-4 py-3 text-xs font-bold text-zinc-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-colors"
-                          >
-                            {cat.Name}
-                          </LinkNext>
-                        ))}
+                      <div className="container mx-auto px-6 lg:px-12 py-8">
+                        <div className="grid grid-cols-4 gap-8">
+                            {/* "All Products" Column */}
+                            <div className="col-span-1 border-r border-zinc-100 pr-8">
+                                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 mb-4">Our Catalogue</h3>
+                                <LinkNext 
+                                    href="/products"
+                                    className="block py-2 text-zinc-500 hover:text-orange-600 transition-colors"
+                                >
+                                    View Full Catalogue →
+                                </LinkNext>
+                            </div>
+
+                            {/* Categories Grid */}
+                            <div className="col-span-3 grid grid-cols-3 gap-8">
+                                {topLevelCategories.map((cat) => (
+                                    <div key={cat.id} className="flex flex-col gap-2">
+                                        <LinkNext 
+                                            href={`/products?category=${cat.Name}`}
+                                            className="text-sm font-bold uppercase tracking-wide text-zinc-800 hover:text-orange-600 transition-colors"
+                                        >
+                                            {cat.Name}
+                                        </LinkNext>
+                                        
+                                        {/* SPECIAL LOGIC FOR RICE */}
+                                        {cat.Name === "Rice" && (
+                                            <div className="flex flex-col gap-1 pl-2 border-l border-zinc-200 mt-1">
+                                                <LinkNext href="/products?category=Basmati Rice" className="text-xs text-zinc-500 hover:text-orange-600 transition-colors">Basmati Rice</LinkNext>
+                                                <LinkNext href="/products?category=Non-Basmati Rice" className="text-xs text-zinc-500 hover:text-orange-600 transition-colors">Non-Basmati Rice</LinkNext>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                       </div>
                     </div>
                 </li>
 
-                {/* 3. About Us Dropdown (Static) */}
+                {/* 3. About Us Dropdown */}
                 <li 
                   className="relative py-2 group"
                   onMouseEnter={() => setAboutDropdownOpen(true)}
@@ -246,19 +263,27 @@ export default function Navbar() {
                   </button>
                   
                   {/* Products Sub-menu */}
-                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${mobileProductsOpen ? "max-h-96 opacity-100 mt-6" : "max-h-0 opacity-0"}`}>
+                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${mobileProductsOpen ? "max-h-200 opacity-100 mt-6" : "max-h-0 opacity-0"}`}>
                     <div className="flex flex-col gap-4 pl-4 border-l-2 border-zinc-800">
                         <LinkNext href="/products" className="text-xl font-bold text-white hover:text-orange-500 transition-colors">
                             View All Products
                         </LinkNext>
                         {topLevelCategories.map((cat) => (
-                            <LinkNext 
-                            key={cat.id} 
-                            href={`/products?category=${cat.Name}`}
-                            className="text-xl font-bold text-zinc-400 hover:text-white transition-colors"
-                            >
-                            {cat.Name}
-                            </LinkNext>
+                            <div key={cat.id}>
+                                <LinkNext 
+                                    href={`/products?category=${cat.Name}`}
+                                    className="text-xl font-bold text-zinc-400 hover:text-white transition-colors"
+                                >
+                                    {cat.Name}
+                                </LinkNext>
+                                {/* Mobile Rice Sub-menu */}
+                                {cat.Name === "Rice" && (
+                                    <div className="flex flex-col gap-2 pl-4 mt-2 border-l border-zinc-700">
+                                        <LinkNext href="/products?category=Basmati Rice" className="text-lg font-medium text-zinc-500 hover:text-orange-500 transition-colors">Basmati Rice</LinkNext>
+                                        <LinkNext href="/products?category=Non-Basmati Rice" className="text-lg font-medium text-zinc-500 hover:text-orange-500 transition-colors">Non-Basmati Rice</LinkNext>
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                   </div>
