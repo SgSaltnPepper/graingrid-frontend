@@ -4,7 +4,10 @@ import LinkNext from "next/link";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { getCategories, getPremiumProduct, getStrapiMedia, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
-import { ChevronRight, ChevronDown, Menu, X, ArrowRight, Instagram, Twitter, Linkedin } from "lucide-react";
+// 1. Remove deprecated lucide icons, keep UI icons
+import { ChevronRight, ChevronDown, Menu, X, ArrowRight } from "lucide-react";
+// 2. Use react-icons for Brands (Standard fix for deprecation warning)
+import { FaInstagram, FaTwitter, FaLinkedin, FaFacebook } from "react-icons/fa6";
 import gsap from "gsap";
 import Search from "../ui/Search"; 
 
@@ -115,7 +118,7 @@ export default function Navbar() {
                 ))}
              </ul>
              
-             {/* Desktop Search Bar - Wrapped in Suspense */}
+             {/* Desktop Search Bar - WRAPPED IN SUSPENSE TO FIX BUILD ERROR */}
              <div className="w-64">
                 <Suspense fallback={<div className="w-full h-10 bg-zinc-100 rounded-full animate-pulse" />}>
                     <Search />
@@ -198,13 +201,13 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Mobile Overlay Hello */}
+      {/* Mobile Overlay */}
       <div ref={mobileOverlayRef} className="fixed inset-0 z-90 flex flex-col bg-zinc-950 px-8 pt-40 pb-12 overflow-y-auto" style={{ clipPath: "circle(0% at 92% 5%)", pointerEvents: "none" }}>
         <div className="flex flex-col h-full justify-between">
           <div className="space-y-12">
             <div className="mobile-li">
                 <div className="mb-8">
-                    {/* Mobile Search Bar -H Wrapped in Suspense */}
+                    {/* Mobile Search Bar - Wrapped in Suspense */}
                     <Suspense fallback={<div className="w-full h-10 bg-zinc-800 rounded-full animate-pulse" />}>
                         <Search />
                     </Suspense>
@@ -249,9 +252,9 @@ export default function Navbar() {
           </div>
           <div className="mobile-li flex items-center justify-between pt-12 border-t border-white/10 mt-12">
             <div className="flex gap-8">
-              <Instagram className="text-white hover:text-orange-500 cursor-pointer transition-colors" size={24} />
-              <Twitter className="text-white hover:text-orange-500 cursor-pointer transition-colors" size={24} />
-              <Linkedin className="text-white hover:text-orange-500 cursor-pointer transition-colors" size={24} />
+              <FaInstagram className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
+              <FaTwitter className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
+              <FaLinkedin className="text-white hover:text-orange-500 cursor-pointer transition-colors text-2xl" />
             </div>
             <LinkNext href="/contact" className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">
               Inquire Now <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
