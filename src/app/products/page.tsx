@@ -3,7 +3,7 @@ import Card from "@/app/components/ui/Card";
 import Filter from "@/app/components/ui/Filter";
 import { getAllProducts, getStrapiMedia, type StrapiProduct } from "@/lib/strapi";
 
-// 1. Force dynamic rendering so filtering works instantly on every request
+// 1. Force dynamic rendering so filtering works instantly
 export const dynamic = 'force-dynamic';
 
 interface ProductsPageProps {
@@ -11,52 +11,47 @@ interface ProductsPageProps {
 }
 
 export default async function AllProductsPage({ searchParams }: ProductsPageProps) {
-  // Await the search params (Next.js 15 requirement)
   const resolvedParams = await searchParams;
   const categoryFilter = typeof resolvedParams.category === 'string' ? resolvedParams.category : undefined;
 
-  // 2. Fetch products filtered by the category in the URL
-  // We pass 'categoryFilter' to our API function
+  // 2. Fetch products
   const products = await getAllProducts(100, categoryFilter);
 
   return (
-    <main className="min-h-screen bg-white pt-32 pb-24">
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+    <main className="min-h-screen bg-white pt-24 pb-24">
+      {/* Full Width Container */}
+      <div className="w-full px-4 md:px-8 lg:px-12">
         
         {/* Header */}
-        <div className="mb-16 max-w-2xl">
+        <div className="mb-12 max-w-4xl mx-auto lg:mx-0">
            <span className="inline-block text-[10px] font-black uppercase tracking-[0.4em] text-orange-600 mb-4 bg-orange-50 px-3 py-1 rounded-full">
               Full Catalogue
            </span>
-           <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-zinc-950 mb-6">
+           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-zinc-950 mb-4">
              The <span className="text-zinc-300">Collection</span>
            </h1>
-           <p className="text-lg font-medium text-zinc-500 leading-relaxed">
-             A complete archive of our premium agricultural exports. Meticulously processed and graded for the global market.
-           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-12 relative">
+        <div className="flex flex-col lg:flex-row gap-8 relative">
             
             {/* Sidebar / Filter Section */}
-            <aside className="lg:w-1/4 lg:sticky lg:top-32 h-fit z-30">
+            {/* Desktop: Vertical Column | Mobile: Sticky Top Bar */}
+            <aside className="lg:w-1/5 lg:sticky lg:top-28 h-fit z-30">
                 <Filter />
             </aside>
 
             {/* Product Grid Section */}
-            <div className="lg:w-3/4">
+            <div className="lg:w-4/5">
                 {products && products.length > 0 ? (
-                <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+                // UPDATED GRID: grid-cols-2 on mobile (small cards), up to 5 on XL screens
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-12">
                     {products.map((p: StrapiProduct) => {
-                    // Extract Category
                     const categoryName = p.categories && p.categories.length > 0 
                         ? (p.categories[0].Name || "Exclusive")
                         : "Exclusive";
 
-                    // Get Main Image
                     const mainImageUrl = getStrapiMedia(p.Image);
 
-                    // Parse Description
                     let descText = "";
                     const rawDescription = p.Description;
                     if (typeof rawDescription === 'string') {
@@ -67,7 +62,8 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                         .filter(Boolean)
                         .join(" ");
                     }
-                    const shortDesc = descText.length > 80 ? descText.substring(0, 80) + "..." : descText;
+                    // Shorter description for smaller cards
+                    const shortDesc = descText.length > 60 ? descText.substring(0, 60) + "..." : descText;
 
                     return (
                         <div key={p.documentId || p.id} className="group relative">
@@ -81,13 +77,15 @@ export default async function AllProductsPage({ searchParams }: ProductsPageProp
                             imageAlt={p.Name}
                             badges={p.badges} 
                             variants={p.variants} 
+                            // Optional: Pass class to reduce font sizes inside card for denser grid
+                            className="text-sm"
                         />
                         </div>
                     );
                     })}
                 </div>
                 ) : (
-                <div className="py-32 text-center border-2 border-dashed border-zinc-100 rounded-[3rem] flex flex-col items-center justify-center">
+                <div className="py-32 text-center border-2 border-dashed border-zinc-100 rounded-4xl flex flex-col items-center justify-center">
                     <div className="h-12 w-12 rounded-full bg-zinc-50 flex items-center justify-center mb-4 text-zinc-300">
                         <span className="text-2xl">🌾</span>
                     </div>
