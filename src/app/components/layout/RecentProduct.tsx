@@ -6,7 +6,7 @@ import { MoveRight } from "lucide-react";
 
 const RecentProducts = async () => {
   // 1. Fetch products from Strapi (Fetching 8 items for a full grid)
-  const products = await getRecentProducts(8); 
+  const products = await getRecentProducts(4); 
 
   // DEBUG LOG - Helpful for Vercel logs
   console.log(`[RecentProducts] Fetched ${products?.length || 0} items`);
