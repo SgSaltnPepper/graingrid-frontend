@@ -1,6 +1,6 @@
 import qs from "qs";
 
-// UPDATE: Default to your Render URL if env var is missing
+// Default to your Render URL if env var is missing
 const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL || 'https://graingrid-backend.onrender.com';
 const API_BASE = `${STRAPI_URL}/api`;
 
@@ -19,7 +19,7 @@ export interface StrapiCategory {
   documentId: string;
   Name: string;
   CatImage?: any;
-  // UPDATE: Added support for subcategories and parent
+  // Support for nested categories
   subcategories?: StrapiCategory[];
   parent?: StrapiCategory;
 }
@@ -99,29 +99,25 @@ export function getStrapiMedia(data: any) {
   
   if (!url) return "/placeholder-product.jpg";
 
-  // IMPORTANT: Cloudinary returns absolute URLs (https://res.cloudinary.com...)
-  // so this check will catch them and return them as-is.
   if (url.startsWith("http")) return url;
 
-  // Fallback for relative paths (should rely on STRAPI_URL)
   return `${STRAPI_URL}${url}`;
 }
 
 // --- API Methods ---
 
 export async function getCategories(): Promise<StrapiCategory[]> {
-  // UPDATE: We now populate 'subcategories' to get the hierarchy
-  // We also filter for categories that have NO parent (top-level only)
-  // so we don't get "Basmati" appearing twice (once inside "Rice" and once alone).
+  // Fetch only top-level categories (where parent is null)
+  // Populate subcategories to build the tree structure (e.g. Rice -> Basmati)
   const query = qs.stringify({ 
     populate: {
         CatImage: { populate: '*' },
-        subcategories: { populate: '*' } // Fetch the children!
+        subcategories: { populate: '*' }
     },
     filters: {
         parent: {
             id: {
-                $null: true // Only get Top Level categories (Like "Rice")
+                $null: true 
             }
         }
     },
@@ -143,8 +139,8 @@ export async function getAllProducts(limit = 50, categoryName?: string, searchTe
     },
     filters: {
       $and: [
-        // Updated logic to allow searching by category Name OR sub-category Name if needed
-        categoryName && categoryName !== 'All' ? { categories: { Name: { $containsi: categoryName } } } : {},
+        // FIX: Changed $containsi to $eq to prevent "Non-Basmati" appearing when searching "Basmati"
+        categoryName && categoryName !== 'All' ? { categories: { Name: { $eq: categoryName } } } : {},
         searchTerm ? { Name: { $containsi: searchTerm } } : {},
       ].filter(f => Object.keys(f).length > 0)
     },
