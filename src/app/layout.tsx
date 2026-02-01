@@ -87,20 +87,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      {/* ADDED: overflow-x-hidden to prevent horizontal scrolling issues on mobile */}
       <body className={`${jost.variable} ${jost.className} antialiased bg-zinc-50 text-zinc-900 selection:bg-orange-600 selection:text-white overflow-x-hidden`}>
-        
         <ScrollProvider>
           <Navbar />
-          
-          {/* REMOVED: Constraints here. We let the page children decide their width. */}
           <main className="min-h-screen relative flex flex-col w-full">
             {children}
           </main>
-          
           <Footer />
         </ScrollProvider>
-        
       </body>
     </html>
   );

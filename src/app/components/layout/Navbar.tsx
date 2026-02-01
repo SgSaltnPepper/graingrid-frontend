@@ -1,7 +1,7 @@
 "use client";
 
 import LinkNext from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { getCategories, getPremiumProduct, getStrapiMedia, type StrapiCategory, type StrapiProduct } from "@/lib/strapi";
 import { ChevronRight, ChevronDown, Menu, X, ArrowRight, Instagram, Twitter, Linkedin } from "lucide-react";
@@ -88,13 +88,8 @@ export default function Navbar() {
 
   return (
     <>
-      {/* UPDATED HEADER: 
-        - Changed 'fixed' to 'sticky' so it pushes content down (doesn't float over).
-        - Added 'top-0' to keep it pinned when scrolling.
-        - Added 'bg-white' permanently so it's never transparent.
-      */}
       <header 
-        className={`sticky top-0 z-[100] w-full bg-white border-b border-zinc-100 transition-all duration-300 ${
+        className={`sticky top-0 z-100 w-full bg-white border-b border-zinc-100 transition-all duration-300 ${
           scrolled ? "shadow-md py-3" : "py-5"
         }`}
       >
@@ -120,9 +115,11 @@ export default function Navbar() {
                 ))}
              </ul>
              
-             {/* Desktop Search Bar */}
+             {/* Desktop Search Bar - Wrapped in Suspense */}
              <div className="w-64">
-                <Search />
+                <Suspense fallback={<div className="w-full h-10 bg-zinc-100 rounded-full animate-pulse" />}>
+                    <Search />
+                </Suspense>
              </div>
           </div>
 
@@ -131,10 +128,9 @@ export default function Navbar() {
               Get Quote
             </LinkNext>
             
-            {/* Toggle Button */}
             <button 
               type="button" 
-              className={`relative z-[110] flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-500 lg:hidden ${open ? "bg-zinc-100 text-zinc-950 rotate-90" : "bg-zinc-950 text-white"}`} 
+              className={`relative z-110 flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-500 lg:hidden ${open ? "bg-zinc-100 text-zinc-950 rotate-90" : "bg-zinc-950 text-white"}`} 
               onClick={() => setOpen(!open)}
             >
               {open ? <X size={24} /> : <Menu size={24} />}
@@ -208,7 +204,10 @@ export default function Navbar() {
           <div className="space-y-12">
             <div className="mobile-li">
                 <div className="mb-8">
-                    <Search />
+                    {/* Mobile Search Bar - Wrapped in Suspense */}
+                    <Suspense fallback={<div className="w-full h-10 bg-zinc-800 rounded-full animate-pulse" />}>
+                        <Search />
+                    </Suspense>
                 </div>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-500 mb-8">Main Navigation</p>
               <div className="flex flex-col gap-6">
