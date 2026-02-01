@@ -26,8 +26,8 @@ export interface Variant {
 export interface CardProps {
   title: string;
   description?: string;
-  subtitle?: string;
-  imageSrc: string; // This is now expected to be the full URL
+  subtitle?: string; // This usually holds the Category Name (e.g., Basmati Rice)
+  imageSrc: string; 
   imageAlt?: string;
   href?: string;
   price?: number | null;
@@ -55,7 +55,7 @@ export default function Card({
   variants = [],
   className = "",
 }: CardProps) {
-  // CHANGED: Default to the first variant if available, otherwise null (Main Product)
+  // Default to the first variant if available
   const [activeVariant, setActiveVariant] = useState<Variant | null>(
     variants && variants.length > 0 ? variants[0] : null
   );
@@ -118,9 +118,6 @@ export default function Card({
         {/* 2. Variant Swatches */}
         {variants && variants.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
-            {/* CHANGED: Removed the "Main Product Selector" button. Only variants are shown. */}
-            
-            {/* Individual Variants */}
             {variants.map((v) => {
               const vImg = getStrapiMedia(v.variantImage);
               const vName = getVariantName(v);
@@ -153,17 +150,14 @@ export default function Card({
           </Link>
         </div>
 
-        {subtitle && (
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-            {subtitle}
-          </p>
-        )}
+        {/* Removed duplicate Subtitle here to keep card clean, since we show it in footer now */}
 
         <div className="mt-auto flex items-center justify-between pt-4 border-t border-zinc-50">
-          <div className="text-[10px] font-black text-zinc-900">
-             {price ? `$${price}` : "GLOBAL EXPORT"}
+          <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+             {/* UPDATED: Show Price if available, otherwise show Category (Subtitle) */}
+             {price ? `$${price}` : (subtitle || "GLOBAL EXPORT")}
           </div>
-          <Link href={href || "#"} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-orange-600 transition-all">
+          <Link href={href || "#"} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-zinc-900 hover:text-orange-600 transition-all">
             View Details <span className="text-lg">→</span>
           </Link>
         </div>
