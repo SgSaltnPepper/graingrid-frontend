@@ -4,13 +4,11 @@ import Link from "next/link";
 import { 
   MoveUpRight, 
   ArrowUp, 
-  Instagram, 
-  Twitter, 
-  Linkedin, 
-  Facebook,
   Mail,
   ArrowRight
 } from "lucide-react";
+// Import Brand Icons from React Icons
+import { FaInstagram, FaTwitter, FaLinkedin, FaFacebook } from "react-icons/fa6";
 
 const FOOTER_LINKS = {
   shop: [
@@ -30,10 +28,10 @@ const FOOTER_LINKS = {
 };
 
 const SOCIAL_LINKS = [
-  { icon: <Instagram size={18} />, href: "#", label: "Instagram" },
-  { icon: <Twitter size={18} />, href: "#", label: "Twitter" },
-  { icon: <Linkedin size={18} />, href: "#", label: "LinkedIn" },
-  { icon: <Facebook size={18} />, href: "#", label: "Facebook" },
+  { icon: <FaInstagram size={18} />, href: "#", label: "Instagram" },
+  { icon: <FaTwitter size={18} />, href: "#", label: "Twitter" },
+  { icon: <FaLinkedin size={18} />, href: "#", label: "LinkedIn" },
+  { icon: <FaFacebook size={18} />, href: "#", label: "Facebook" },
 ];
 
 export default function Footer() {
