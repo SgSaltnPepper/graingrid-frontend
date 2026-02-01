@@ -104,7 +104,7 @@ export default function Navbar() {
   return (
     <>
       <header className={`fixed top-0 z-100 w-full transition-all duration-500 ${scrolled ? "py-4" : "py-8"}`}>
-        {/* UPDATED: Changed 'max-w-7xl' to 'w-full' and adjusted padding for full width */}
+        {/* Full Width Nav Container */}
         <nav className={`mx-auto flex w-full items-center justify-between px-6 lg:px-12 transition-all duration-500 rounded-full border border-zinc-200/50 ${scrolled ? "bg-white/80 backdrop-blur-2xl shadow-2xl py-3 mx-4 w-auto lg:w-[98%] lg:mx-auto" : "bg-white py-5 mx-6 lg:mx-0 lg:w-full lg:rounded-none lg:border-none"}`}>
           <LinkNext href="/" className="group flex items-center gap-2 pl-2">
             <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-zinc-950 flex items-center justify-center transition-all group-hover:rotate-15 group-hover:scale-110">
@@ -131,7 +131,7 @@ export default function Navbar() {
               Get Quote
             </LinkNext>
             
-            {/* TOGGLE BUTTON: High Z-Index to stay above overlay */}
+            {/* TOGGLE BUTTON */}
             <button 
               type="button" 
               className={`relative z-110 flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-500 lg:hidden ${open ? "bg-white text-zinc-950 rotate-90" : "bg-zinc-950 text-white"}`} 
@@ -145,7 +145,6 @@ export default function Navbar() {
 
         {/* Desktop Mega Menu */}
         <div ref={desktopMegaRef} onMouseLeave={() => setShowMega(false)} className="hidden absolute left-0 top-0 -z-10 w-full bg-white border-b-2 border-zinc-100 pt-32 pb-16 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)]">
-          {/* UPDATED: Changed 'max-w-7xl' to 'w-full' for full width content */}
           <div className="mx-auto w-full px-6 lg:px-12 grid grid-cols-12 gap-16">
             <div className="col-span-4 border-r border-zinc-100 pr-12">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-orange-600 mb-10">Our Collections</p>
@@ -182,9 +181,7 @@ export default function Navbar() {
                         {hasSubs && (
                             <div className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isExpanded ? "max-h-60" : "max-h-0"}`}>
                                 <div className="flex flex-col gap-3 pl-4 pt-3">
-                                    {/* REMOVED: The "All {Category}" link was removed as per request */}
-                                    
-                                    {/* Link to Children */}
+                                    {/* Subcategories only (Removed the "All" link) */}
                                     {cat.subcategories?.map((sub) => (
                                         <LinkNext key={sub.id} href={`/products?category=${sub.Name}`} className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-zinc-500 hover:text-orange-600 transition-colors">
                                             <span className="w-1.5 h-1.5 rounded-full bg-zinc-300"></span> {sub.Name}
@@ -268,8 +265,7 @@ export default function Navbar() {
                             {hasSubs && (
                                 <div className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isExpanded ? "max-h-96" : "max-h-0"}`}>
                                     <div className="flex flex-col gap-4 pl-4 pt-4 border-l border-white/10 ml-1 mt-2">
-                                        {/* REMOVED: "All {Category}" Link removed here as well */}
-                                        
+                                        {/* Subcategories only (Removed the "All" link) */}
                                         {cat.subcategories?.map(sub => (
                                             <LinkNext key={sub.id} href={`/products?category=${sub.Name}`} className="text-sm font-bold uppercase tracking-widest text-zinc-400 hover:text-orange-500 transition-colors flex items-center gap-2">
                                                 - {sub.Name}
