@@ -11,20 +11,17 @@ export default function ChairmansMessage() {
   useGSAP(() => {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-    // 1. Text Entry Animation (Staggered)
     tl.fromTo(".anim-text",
       { y: 30, opacity: 0 },
       { y: 0, opacity: 1, duration: 1, stagger: 0.15, delay: 0.2 }
     );
 
-    // 2. Quote Line Animation
     tl.fromTo(".quote-border", 
         { scaleY: 0 }, 
         { scaleY: 1, duration: 1, ease: "expo.out" }, 
         "-=0.5"
     );
 
-    // 3. Floating Icons Animation (Continuous)
     gsap.to(".float-icon", {
       y: -20,
       rotation: 5,
@@ -42,7 +39,7 @@ export default function ChairmansMessage() {
   return (
     <main ref={containerRef} className="relative pt-32 pb-24 px-6 lg:px-12 bg-white min-h-screen overflow-hidden">
       
-      {/* --- DECORATIVE FLOATING BACKGROUNDS --- */}
+      {/* Decorative Backgrounds */}
       <div className="absolute top-20 right-[-10%] md:right-[-5%] text-orange-50 opacity-60 float-icon pointer-events-none select-none">
         <Wheat size={400} strokeWidth={0.5} />
       </div>
@@ -53,7 +50,6 @@ export default function ChairmansMessage() {
         <Anchor size={150} strokeWidth={0.5} />
       </div>
 
-      {/* --- MAIN CONTENT --- */}
       <div className="relative z-10 max-w-4xl mx-auto">
         
         {/* Header */}
@@ -66,12 +62,14 @@ export default function ChairmansMessage() {
             </h1>
         </div>
 
-        {/* Body Text */}
+        {/* Body Content */}
         <div className="prose prose-lg prose-zinc text-zinc-500 md:text-xl leading-relaxed max-w-none">
             
             <h3 className="anim-text text-2xl md:text-3xl font-bold text-zinc-900 mb-8">
                 Building the Future of Food Trade
             </h3>
+
+            <p className="anim-text font-semibold text-zinc-800 mb-4">Dear Visitor,</p>
 
             <p className="anim-text mb-6">
                 At <span className="font-bold text-zinc-900">Grain Grid PVT LTD</span>, our foundation is built on a steadfast commitment to innovation and quality. Since our inception, we have strived to go beyond simple trade; we provide integrated solutions that secure the supply of essential commodities. Our goal is not just to meet client needs, but to exceed them, cementing our position as a trusted strategic partner in the global food supply chain.
@@ -81,7 +79,7 @@ export default function ChairmansMessage() {
                 We believe that true success is never a matter of chance—it is the result of clear vision and relentless execution. This philosophy is best captured by our guiding principle:
             </p>
 
-            {/* Featured Quote Section */}
+            {/* Quote Section */}
             <div className="anim-text relative py-4 my-12">
                 <div className="quote-border absolute left-0 top-0 bottom-0 w-1 bg-orange-500 origin-top" />
                 <div className="pl-8 md:pl-12 relative">
@@ -104,12 +102,11 @@ export default function ChairmansMessage() {
             <div className="anim-text pt-10 border-t border-zinc-100">
                 <p className="text-lg font-medium text-zinc-400 mb-6">Best regards,</p>
                 <div>
-                    {/* You can replace this with an actual image signature if available */}
                     <div className="font-handwriting text-4xl text-zinc-900 mb-2 font-black italic">
-                        The Chairman
+                        Mr. Mohammad Abdullah
                     </div>
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-600">
-                        Grain Grid PVT LTD
+                        Chairman, Grain Grid PVT LTD
                     </p>
                 </div>
             </div>
