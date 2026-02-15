@@ -72,18 +72,28 @@ function flatten(data: any): any {
   return data;
 }
 
+// --- Failsafe Fetch Wrapper ---
 async function fetchStrapi(path: string) {
+  const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  
   try {
-    const url = `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetch(url, { 
+        cache: 'no-store',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
+    
     if (!response.ok) {
-        console.error(`Strapi Error: ${response.status} on ${url}`);
+        console.error(`[Strapi Error]: ${response.status} on ${url}`);
         return null;
     }
+    
     const json = await response.json();
     return flatten(json);
   } catch (error) {
-    console.error("Strapi Fetch Error:", error);
+    // Gracefully catch the "fetch failed" error (usually due to Render backend sleeping)
+    console.warn(`[Strapi Connection Warning]: Could not fetch from ${url}. The backend might be asleep or offline.`);
     return null;
   }
 }
@@ -99,8 +109,10 @@ export function getStrapiMedia(data: any) {
   
   if (!url) return "/placeholder-product.jpg";
 
+  // Cloudinary/External URL check
   if (url.startsWith("http")) return url;
 
+  // Local Strapi URL fallback
   return `${STRAPI_URL}${url}`;
 }
 
@@ -108,7 +120,7 @@ export function getStrapiMedia(data: any) {
 
 export async function getCategories(): Promise<StrapiCategory[]> {
   // Fetch only top-level categories (where parent is null)
-  // Populate subcategories to build the tree structure (e.g. Rice -> Basmati)
+  // Populate subcategories to build the tree structure
   const query = qs.stringify({ 
     populate: {
         CatImage: { populate: '*' },
@@ -139,7 +151,7 @@ export async function getAllProducts(limit = 50, categoryName?: string, searchTe
     },
     filters: {
       $and: [
-        // FIX: Changed $containsi to $eq to prevent "Non-Basmati" appearing when searching "Basmati"
+        // STRICT MATCHING ($eq) to prevent "Non-Basmati" showing up when searching "Basmati"
         categoryName && categoryName !== 'All' ? { categories: { Name: { $eq: categoryName } } } : {},
         searchTerm ? { Name: { $containsi: searchTerm } } : {},
       ].filter(f => Object.keys(f).length > 0)
