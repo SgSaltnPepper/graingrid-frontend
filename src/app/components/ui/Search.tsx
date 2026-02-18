@@ -9,19 +9,20 @@ export default function Search({ isPending = false }: { isPending?: boolean }) {
   const searchParams = useSearchParams();
   const [localPending, startTransition] = useTransition();
   
-  // Local state for the input box
+  // Local state for what is currently in the input box
   const [inputValue, setInputValue] = useState(searchParams.get("search") || "");
   
-  // Track if the user is actively typing to prevent the URL from overriding their input
-  const isTyping = useRef(false);
+  // This REF is the magic fix! It tracks the last value we specifically sent to the backend.
+  // It stops the URL from overwriting your text while you are actively typing or erasing.
+  const lastPushedValue = useRef(searchParams.get("search") || "");
 
-  // 1. Handle user typing -> Update URL (Debounced)
+  // 1. Handle User Typing -> Send to URL (Debounced)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const currentSearchInUrl = searchParams.get("search") || "";
-      
-      // Only push to the router if the value actually differs from the URL
-      if (inputValue !== currentSearchInUrl) {
+    const timeout = setTimeout(() => {
+      // ONLY push to the URL if the text box is actually different from our last push
+      if (inputValue !== lastPushedValue.current) {
+        lastPushedValue.current = inputValue; // Update our tracker
+        
         const params = new URLSearchParams(searchParams.toString());
         if (inputValue) {
           params.set("search", inputValue);
@@ -29,35 +30,28 @@ export default function Search({ isPending = false }: { isPending?: boolean }) {
           params.delete("search");
         }
         
-        // Reset pagination when searching
+        // Reset page to 1 when a new search is made
         params.delete("page");
 
         startTransition(() => {
           router.replace(`/products?${params.toString()}`, { scroll: false });
         });
       }
-      
-      // Timer finished pushing to URL, user is no longer typing
-      isTyping.current = false; 
-    }, 400);
+    }, 400); // 400ms wait after you stop typing
 
-    return () => {
-      // If the effect re-runs before the timer finishes, it means the user is actively typing
-      isTyping.current = true;
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timeout);
   }, [inputValue, router, searchParams]);
 
-  // 2. Handle external URL changes (e.g., clicking "Back" in browser)
+  // 2. Handle External URL Changes (e.g. Browser 'Back' button or clicking 'Clear Filters')
   useEffect(() => {
-    // ONLY sync from URL to local input if the user isn't currently typing
-    if (!isTyping.current) {
-      const currentSearchInUrl = searchParams.get("search") || "";
-      if (inputValue !== currentSearchInUrl) {
-        setInputValue(currentSearchInUrl);
-      }
+    const urlSearch = searchParams.get("search") || "";
+    // If the URL changes, but it doesn't match what we last pushed, it means the change
+    // came from OUTSIDE the search bar (like hitting the back button). Then we update the input box.
+    if (urlSearch !== lastPushedValue.current) {
+      lastPushedValue.current = urlSearch;
+      setInputValue(urlSearch);
     }
-  }, [searchParams, inputValue]);
+  }, [searchParams]);
 
   const showPulse = isPending || localPending;
 
@@ -81,8 +75,9 @@ export default function Search({ isPending = false }: { isPending?: boolean }) {
       <div className="absolute inset-y-0 right-0 flex items-center pr-2">
         {inputValue && (
             <button 
+                // When clicked, it manually empties the input, triggering the first useEffect to clear the URL cleanly
                 onClick={() => setInputValue("")} 
-                className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-95"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 hover:bg-red-50 hover:text-red-500 transition-all active:scale-95"
             >
               <X size={14} strokeWidth={2.5} />
             </button>
