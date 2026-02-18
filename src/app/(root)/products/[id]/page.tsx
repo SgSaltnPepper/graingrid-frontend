@@ -4,12 +4,16 @@ import { useState, useEffect, use, useRef } from "react";
 import Image from "next/image";
 import { getStrapiMedia, getProductById, StrapiVariant, StrapiFAQ } from "@/lib/strapi";
 import gsap from "gsap";
+import { ChevronDown } from "lucide-react"; // Import for FAQ Arrow
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<StrapiVariant | null>(null);
+  
+  // State for tracking the currently open FAQ
+  const [openFaqId, setOpenFaqId] = useState<number | null>(null);
   
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +76,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     }
   };
 
+  const toggleFaq = (faqId: number) => {
+    setOpenFaqId(prevId => (prevId === faqId ? null : faqId));
+  };
+
   const renderSpecs = (variant: StrapiVariant) => {
     if (!variant.Label || !variant.Value) return null;
     const labels = variant.Label.split('\n');
@@ -110,8 +118,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       <div className="container mx-auto max-w-6xl px-8 lg:px-12">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 items-start">
           
-          {/* Image Section */}
-          <div className="lg:col-span-5 lg:sticky lg:top-32">
+          {/* --- IMAGE SECTION --- */}
+          {/* Removed 'lg:sticky lg:top-32' to stop it from following the scroll */}
+          <div className="lg:col-span-5 relative">
             <div className="relative aspect-4/5 overflow-hidden rounded-2xl bg-slate-50 shadow-xl border border-slate-100">
               <div ref={imageContainerRef} className="relative w-full h-full">
                 <Image 
@@ -126,10 +135,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             </div>
           </div>
 
-          {/* Content Section */}
+          {/* --- CONTENT SECTION --- */}
           <div className="lg:col-span-7 flex flex-col">
             
-            {/* NEW: Category Label */}
             <span className="mb-2 inline-block text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
               {categoryName}
             </span>
@@ -161,7 +169,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             {/* Description & Specs */}
             <div className="mb-12">
               <p className="mb-3 text-[9px] font-black uppercase tracking-widest text-orange-600">Overview</p>
-              <div className="relative min-h-80px">
+              <div className="relative min-h-20">
                  <p className="text-base leading-relaxed text-slate-600 border-l-2 border-orange-100 pl-5 transition-all duration-300">
                     {selectedVariant?.Description || product.Description}
                  </p>
@@ -169,20 +177,60 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {selectedVariant && renderSpecs(selectedVariant)}
             </div>
 
-            {/* FAQs */}
+            {/* --- NEW INTERACTIVE FAQ ACCORDION --- */}
             {product.FAQs?.length > 0 && (
               <div className="mt-12 border-t border-slate-100 pt-12">
-                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-8">Frequently Asked Questions</h3>
-                <div className="space-y-6">
+                <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900 mb-8">
+                  Frequently Asked Questions
+                </h3>
+                <div className="space-y-4">
                   {product.FAQs.map((faq: StrapiFAQ) => (
-                    <div key={faq.id} className="group">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-orange-600 mb-2 group-hover:text-slate-900 transition-colors">Q: {faq.Ques}</h4>
-                      <p className="text-sm font-medium text-slate-500 leading-relaxed pl-4 border-l border-slate-200 group-hover:border-orange-600 transition-colors">{faq.Ans}</p>
+                    <div 
+                      key={faq.id} 
+                      className={`group border rounded-2xl overflow-hidden transition-all duration-300 ${
+                        openFaqId === faq.id ? "border-orange-200 bg-orange-50/30" : "border-slate-200 bg-white hover:border-orange-200"
+                      }`}
+                    >
+                      {/* Accordion Header / Button */}
+                      <button 
+                        onClick={() => toggleFaq(faq.id)}
+                        className="w-full flex items-center justify-between p-6 text-left focus:outline-none"
+                      >
+                        <h4 className={`text-xs font-black uppercase tracking-widest transition-colors pr-6 ${
+                          openFaqId === faq.id ? "text-orange-600" : "text-slate-900 group-hover:text-orange-600"
+                        }`}>
+                          {faq.Ques}
+                        </h4>
+                        
+                        {/* Animated Arrow Icon */}
+                        <div className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-colors ${
+                          openFaqId === faq.id ? "bg-orange-100 text-orange-600" : "bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-600"
+                        }`}>
+                          <ChevronDown 
+                            size={16} 
+                            className={`transition-transform duration-300 ease-in-out ${
+                              openFaqId === faq.id ? "rotate-180" : ""
+                            }`} 
+                          />
+                        </div>
+                      </button>
+                      
+                      {/* Accordion Body (Animated Height & Opacity) */}
+                      <div 
+                        className={`transition-all duration-300 ease-in-out px-6 overflow-hidden ${
+                          openFaqId === faq.id ? "max-h-125 opacity-100 pb-6" : "max-h-0 opacity-0 pb-0"
+                        }`}
+                      >
+                        <p className="text-sm font-medium text-slate-500 leading-relaxed pl-4 border-l-2 border-orange-200 mt-2">
+                          {faq.Ans}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+            
           </div>
         </div>
       </div>
