@@ -4,47 +4,81 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getStrapiMedia } from "@/lib/strapi";
-import { MoveRight, Play } from "lucide-react";
+import { MoveRight } from "lucide-react";
 import gsap from "gsap";
 
 export default function HeroSlider({ products }: { products: any[] }) {
   const [current, setCurrent] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const nextSlide = useCallback(() => {
+    if (isAnimating) return;
     setCurrent((prev) => (prev === products.length - 1 ? 0 : prev + 1));
-  }, [products.length]);
+  }, [products.length, isAnimating]);
 
-  // Handle slide transitions with GSAP
+  // GSAP Cinematic Clip-Path Transitions
   useEffect(() => {
+    setIsAnimating(true);
     const ctx = gsap.context(() => {
-      // Animate current slide text
-      gsap.fromTo(
-        ".hero-title",
-        { y: 100, opacity: 0, skewY: 7 },
-        { y: 0, opacity: 1, skewY: 0, duration: 1.2, ease: "expo.out", delay: 0.2 }
-      );
+      const slides = gsap.utils.toArray(".slide-container");
+      const currentSlide = slides[current] as HTMLElement;
       
+      // Reset all slides z-index
+      gsap.set(slides, { zIndex: 0 });
+      gsap.set(currentSlide, { zIndex: 10 });
+
+      // 1. Cinematic Wipe (Curtain Reveal)
       gsap.fromTo(
-        ".hero-desc",
-        { y: 30, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out", delay: 0.5 }
+        currentSlide,
+        { clipPath: "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)" },
+        { 
+          clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)", 
+          duration: 1.6, 
+          ease: "power4.inOut" 
+        }
       );
 
+      // 2. Image Slow Zoom (Ken Burns effect)
+      const img = currentSlide.querySelector(".slide-image");
       gsap.fromTo(
-        ".hero-btn",
-        { scale: 0.8, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)", delay: 0.8, stagger: 0.1 }
+        img,
+        { scale: 1.3 },
+        { scale: 1, duration: 2, ease: "power3.out" }
       );
 
-      // Progress bar animation
+      // 3. Staggered Text Mask Reveal
+      const textLines = currentSlide.querySelectorAll(".hero-text-line");
       gsap.fromTo(
-        progressRef.current,
+        textLines,
+        { y: 100, opacity: 0, rotateX: 15 },
+        { 
+          y: 0, 
+          opacity: 1, 
+          rotateX: 0, 
+          duration: 1.2, 
+          stagger: 0.1, 
+          ease: "expo.out", 
+          delay: 0.6 
+        }
+      );
+
+      // 4. Elements Fade In
+      const elements = currentSlide.querySelectorAll(".hero-element");
+      gsap.fromTo(
+        elements,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 1, stagger: 0.1, ease: "power2.out", delay: 1, onComplete: () => setIsAnimating(false) }
+      );
+
+      // 5. Progress Line
+      gsap.fromTo(
+        `.progress-line-${current}`,
         { scaleX: 0 },
         { scaleX: 1, duration: 6, ease: "none" }
       );
+
     }, sliderRef);
 
     return () => ctx.revert();
@@ -60,13 +94,10 @@ export default function HeroSlider({ products }: { products: any[] }) {
   if (!products?.length) return null;
 
   return (
-    <section ref={sliderRef} className="relative h-[85vh] lg:h-[90vh] w-full overflow-hidden bg-zinc-950">
-      {/* Noise Texture Overlay for Premium Feel */}
-      <div className="pointer-events-none absolute inset-0 z-40 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-
+    <section ref={sliderRef} className="relative h-[90vh] lg:h-[95vh] w-full bg-zinc-950 overflow-hidden">
+      
       {products.map((item, index) => {
         const imageUrl = getStrapiMedia(item.Image);
-        const isActive = index === current;
         const descriptionText = typeof item.Description === 'string' 
           ? item.Description 
           : item.Description?.[0]?.children?.[0]?.text || "";
@@ -74,84 +105,77 @@ export default function HeroSlider({ products }: { products: any[] }) {
         return (
           <div
             key={item.documentId || item.id}
-            className={`absolute inset-0 flex items-center transition-all duration-1000 ${
-              isActive ? "opacity-100 z-10" : "opacity-0 z-0"
-            }`}
+            className={`slide-container absolute inset-0 w-full h-full ${index === current ? 'pointer-events-auto' : 'pointer-events-none'}`}
+            style={{ clipPath: index === current ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)" : "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)" }}
           >
-            {/* BACKGROUND WITH DUAL OVERLAY */}
+            {/* Image & Overlays */}
             <div className="absolute inset-0">
               <Image
                 src={imageUrl}
                 alt={item.Name}
                 fill
                 priority={index === 0}
-                className={`object-cover object-center transition-transform duration-6000 ease-out ${
-                  isActive ? "scale-110 rotate-1" : "scale-125"
-                }`}
+                className="slide-image object-cover object-center"
               />
-              <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/60 to-transparent z-10" />
-              <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-transparent to-transparent z-10" />
+              <div className="absolute inset-0 bg-linear-to-r from-zinc-950/90 via-zinc-950/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-zinc-950/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
             </div>
 
-            {/* CONTENT CONTAINER */}
-            <div className="container relative z-20 mx-auto px-6 lg:px-12">
-              <div className="max-w-4xl">
-                <div className="mb-6 flex items-center gap-4 overflow-hidden">
-                  <div className="h-px w-12 bg-orange-500" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-orange-500">
+            {/* Content Content */}
+            <div className="absolute bottom-0 left-0 w-full px-6 pb-24 lg:px-16 lg:pb-32 z-20">
+              <div className="max-w-5xl">
+                
+                {/* Badge */}
+                <div className="hero-element mb-8 flex items-center gap-4 overflow-hidden">
+                  <div className="h-px w-16 bg-orange-500" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-orange-400 bg-orange-500/10 px-4 py-2 rounded-full backdrop-blur-md border border-orange-500/20">
                     {item.categories?.[0]?.Name || "Featured"}
                   </span>
                 </div>
 
-                <h1 className="hero-title text-6xl font-black uppercase tracking-tighter text-white sm:text-8xl lg:text-[7vw] leading-[0.85]">
+                {/* Title (Masked lines for smooth reveal) */}
+                <h1 className="flex flex-col gap-2 text-5xl font-black uppercase tracking-tighter text-white sm:text-7xl lg:text-[7vw] leading-[0.85] mb-8">
                   {item.Name.split(' ').map((word: string, i: number) => (
-                    <span key={i} className="inline-block mr-4">
-                      {word === "Premium" ? <span className="text-orange-600 italic font-serif lowercase">{word}</span> : word}
-                    </span>
+                    <div key={i} className="overflow-hidden py-1">
+                      <span className="hero-text-line block">
+                        {word === "Premium" ? <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-amber-600 italic font-serif lowercase pr-4">{word}</span> : word}
+                      </span>
+                    </div>
                   ))}
                 </h1>
 
-                <p className="hero-desc mt-8 max-w-xl text-lg font-medium leading-relaxed text-zinc-400">
-                  {descriptionText}
-                </p>
-
-                <div className="mt-12 flex flex-wrap gap-5">
-                  <Link
-                    href={`/products/${item.documentId || item.id}`}
-                    className="hero-btn group relative flex items-center gap-3 overflow-hidden rounded-full bg-orange-600 px-10 py-5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-white hover:text-orange-600"
-                  >
-                    Explore Product <MoveRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                  </Link>
-                  
+                {/* Glassmorphism Info Box */}
+                <div className="hero-element flex flex-col md:flex-row gap-8 items-start md:items-center bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl max-w-3xl">
+                    <p className="text-sm md:text-base font-medium leading-relaxed text-zinc-300 flex-1">
+                        {descriptionText.length > 120 ? descriptionText.substring(0, 120) + "..." : descriptionText}
+                    </p>
+                    <Link
+                        href={`/products/${item.documentId || item.id}`}
+                        className="group flex items-center gap-4 rounded-full bg-white px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-950 transition-all hover:bg-orange-600 hover:text-white shrink-0 shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+                    >
+                        Explore <MoveRight size={16} className="group-hover:translate-x-2 transition-transform" />
+                    </Link>
                 </div>
+
               </div>
             </div>
           </div>
         );
       })}
 
-      {/* BOTTOM NAV & PROGRESS */}
-      <div className="absolute bottom-12 left-6 right-6 z-30 flex flex-col md:flex-row items-end md:items-center justify-between gap-8 lg:px-12">
-        <div className="flex items-center gap-4">
-          <div className="relative h-px w-40 bg-white/20 overflow-hidden">
-            <div ref={progressRef} className="absolute inset-0 bg-orange-500 origin-left scale-x-0" />
+      {/* --- PREMIUM SLIDER NAVIGATION --- */}
+      <div className="absolute bottom-8 right-6 lg:right-16 z-30 flex items-center gap-6">
+        {products.map((_, i) => (
+          <div key={i} className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrent(i)}>
+            <span className={`text-[10px] font-black transition-colors duration-300 ${i === current ? 'text-white' : 'text-zinc-600 group-hover:text-zinc-400'}`}>
+                0{i + 1}
+            </span>
+            <div className="relative h-px w-16 bg-white/20 overflow-hidden">
+                <div className={`progress-line-${i} absolute inset-0 bg-orange-500 origin-left ${i === current ? 'scale-x-100' : 'scale-x-0'}`} />
+            </div>
           </div>
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">
-            0{current + 1} / 0{products.length}
-          </span>
-        </div>
-
-        <div className="flex gap-4">
-          {products.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className={`h-2 w-2 rounded-full transition-all duration-500 ${
-                i === current ? "w-12 bg-orange-600" : "bg-white/30 hover:bg-white/60"
-              }`}
-            />
-          ))}
-        </div>
+        ))}
       </div>
     </section>
   );
