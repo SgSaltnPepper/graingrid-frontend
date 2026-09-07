@@ -5,9 +5,9 @@ import {
   MoveUpRight, 
   ArrowUp, 
   Mail,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from "lucide-react";
-// Import Brand Icons from React Icons
 import { FaInstagram, FaTwitter, FaLinkedin, FaFacebook } from "react-icons/fa6";
 
 const FOOTER_LINKS = {
@@ -165,9 +165,21 @@ export default function Footer() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2 text-zinc-600">
-            <Mail size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">hello@graingrid.com</span>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-zinc-600">
+              <Mail size={14} />
+              <span className="text-[10px] font-black uppercase tracking-widest">hello@graingrid.com</span>
+            </div>
+            
+            {/* Discreet Staff Portal Link */}
+            <Link 
+              href="/admin" 
+              className="flex items-center gap-1.5 text-zinc-700 hover:text-orange-500 transition-colors"
+              title="Staff Portal"
+            >
+              <Lock size={12} />
+              <span className="text-[9px] font-black uppercase tracking-widest">Staff</span>
+            </Link>
           </div>
         </div>
       </div>
