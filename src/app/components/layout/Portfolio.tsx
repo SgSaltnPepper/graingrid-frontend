@@ -3,9 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MoveRight, Wheat, Shovel, Sprout, Nut, Apple, Leaf, ArrowUpRight, Sparkles } from "lucide-react";
-import { getCategories, getStrapiMedia, type StrapiCategory } from "@/lib/strapi";
-import { motion, Variants } from "framer-motion";
+import { MoveRight, Wheat, Shovel, Sprout, Nut, Apple, Leaf, ArrowUpRight, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { getCategories } from "@/sanity/lib/queries";
+import { motion, PanInfo, AnimatePresence } from "framer-motion";
+
+export interface SanityCategory {
+  _id: string;
+  Name: string;
+  CatImage?: string;
+}
 
 const getIcon = (name: string) => {
   const n = name.toLowerCase();
@@ -14,79 +20,94 @@ const getIcon = (name: string) => {
   if (n.includes("pulse")) return <Sprout className="w-5 h-5" />;
   if (n.includes("cereal")) return <Nut className="w-5 h-5" />;
   if (n.includes("fruit")) return <Apple className="w-5 h-5" />;
+  if (n.includes("bakery") || n.includes("bread")) return <Wheat className="w-5 h-5" />;
+  if (n.includes("meat") || n.includes("seafood")) return <Leaf className="w-5 h-5" />;
   return <Leaf className="w-5 h-5" />;
 };
 
-// Dynamic Bento Grid Pattern Generator
-const getGridClass = (index: number) => {
-  const pattern = [
-    "md:col-span-2 md:row-span-2", // 0: Large Square
-    "md:col-span-1 md:row-span-1", // 1: Small Square
-    "md:col-span-1 md:row-span-1", // 2: Small Square
-    "md:col-span-2 md:row-span-1", // 3: Wide Rectangle
-    "md:col-span-1 md:row-span-2", // 4: Tall Rectangle
-    "md:col-span-1 md:row-span-1", // 5: Small Square
-    "md:col-span-2 md:row-span-1", // 6: Wide Rectangle
-  ];
-  return pattern[index % pattern.length];
-};
-
 export default function Portfolio() {
-  const [categories, setCategories] = useState<StrapiCategory[]>([]);
+  const [categories, setCategories] = useState<SanityCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
       try {
         const data = await getCategories();
-        // Safety filter to ensure we only show main categories
-        const topLevel = (Array.isArray(data) ? data : []).filter(
-            cat => !['Basmati Rice', 'Non-Basmati Rice'].includes(cat.Name)
-        );
-        setCategories(topLevel);
+        if (isMounted) {
+          const topLevel = (Array.isArray(data) ? data : []).filter(
+              (cat: SanityCategory) => !['Basmati Rice', 'Non-Basmati Rice'].includes(cat.Name)
+          );
+          setCategories(topLevel);
+        }
       } catch (error) {
         console.error("Portfolio fetch error:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     fetchData();
+    return () => { isMounted = false; };
   }, []);
 
-  // --- Framer Motion Animations ---
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+  // --- Carousel Navigation Logic ---
+  const handleNext = () => {
+    setActiveIndex((prev) => (prev + 1) % categories.length);
+  };
+
+  const handlePrev = () => {
+    setActiveIndex((prev) => (prev - 1 + categories.length) % categories.length);
+  };
+
+  // Drag interaction for touch devices
+  const handleDragEnd = (e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const swipeThreshold = 50;
+    if (info.offset.x < -swipeThreshold) {
+      handleNext();
+    } else if (info.offset.x > swipeThreshold) {
+      handlePrev();
     }
   };
 
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 50, scale: 0.95 },
-    show: { 
-      opacity: 1, 
-      y: 0, 
-      scale: 1, 
-      transition: { type: "spring", stiffness: 100, damping: 20 } 
-    }
+  // Determine styling based on distance from the active item
+  const getCardStyles = (index: number) => {
+    const offset = index - activeIndex;
+    const total = categories.length;
+    
+    // Normalize offset for infinite looping feel
+    let normalizedOffset = offset;
+    if (offset > Math.floor(total / 2)) normalizedOffset -= total;
+    if (offset < -Math.floor(total / 2)) normalizedOffset += total;
+
+    const absOffset = Math.abs(normalizedOffset);
+    const isVisible = absOffset <= 2; // Only render the active card + 2 on each side
+
+    return {
+      x: `calc(${normalizedOffset * 65}% + ${normalizedOffset * 10}px)`,
+      scale: 1 - absOffset * 0.15,
+      zIndex: 40 - absOffset,
+      opacity: isVisible ? 1 - absOffset * 0.3 : 0,
+      rotateY: normalizedOffset * -10, // 3D Tilt effect
+      pointerEvents: isVisible ? "auto" as const : "none" as const,
+    };
   };
 
   return (
-    <section className="py-32 bg-white px-6 lg:px-12 overflow-hidden border-t border-zinc-100">
-      <div className="mx-auto max-w-400">
+    <section className="py-24 lg:py-32 bg-zinc-50 overflow-hidden border-t border-zinc-100">
+      <div className="mx-auto max-w-400 px-6 lg:px-12">
         
-        {/* --- HEADER SECTION --- */}
+        {/* --- HEADER & NAVIGATION SECTION --- */}
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-10"
+            className="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-12 lg:mb-16 gap-8"
         >
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-3 mb-6">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 border border-orange-100 text-orange-600">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 border border-orange-200 text-orange-600">
                   <Sparkles size={14} />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-400">Explore Categories</span>
@@ -98,71 +119,102 @@ export default function Portfolio() {
             </h2>
           </div>
           
-          <Link href="/products" className="group relative overflow-hidden rounded-full bg-zinc-950 px-10 py-5 transition-all hover:bg-orange-600 hover:shadow-2xl hover:shadow-orange-500/20 active:scale-95">
-            <span className="relative z-10 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-white">
-              View All Products <MoveRight size={16} className="group-hover:translate-x-2 transition-transform duration-500" />
-            </span>
-          </Link>
-        </motion.div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 lg:gap-6 w-full lg:w-auto justify-between lg:justify-end">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handlePrev}
+                className="h-14 w-14 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all active:scale-95 shadow-sm"
+                aria-label="Previous Category"
+              >
+                <ChevronLeft size={24} strokeWidth={2} />
+              </button>
+              <button 
+                onClick={handleNext}
+                className="h-14 w-14 rounded-full border border-zinc-200 bg-white flex items-center justify-center text-zinc-600 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 transition-all active:scale-95 shadow-sm"
+                aria-label="Next Category"
+              >
+                <ChevronRight size={24} strokeWidth={2} />
+              </button>
+            </div>
 
-        {/* --- BENTO GRID SECTION --- */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-[300px] lg:auto-rows-[350px]">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className={`${getGridClass(i)} bg-zinc-100 rounded-[2.5rem] animate-pulse`} />
-            ))}
+            <Link href="/products" className="group relative overflow-hidden rounded-full bg-zinc-950 px-8 py-4 lg:px-10 lg:py-5 transition-all hover:bg-orange-600 hover:shadow-2xl hover:shadow-orange-500/20 active:scale-95 w-full sm:w-auto text-center shrink-0">
+              <span className="relative z-10 flex items-center justify-center gap-3 text-[10px] lg:text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                View All Catalog <MoveRight size={16} className="group-hover:translate-x-2 transition-transform duration-500" />
+              </span>
+            </Link>
           </div>
+        </motion.div>
+      </div>
+
+      {/* --- 3D STACKING CAROUSEL SECTION --- */}
+      <div className="relative w-full flex justify-center items-center h-125 lg:h-150 mt-10 perspective-distant overflow-hidden">
+        {loading ? (
+          <div className="absolute w-[85vw] sm:w-100 md:w-112.5 h-100 lg:h-125 bg-zinc-200 rounded-[2.5rem] animate-pulse shadow-xl" />
         ) : (
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 auto-rows-[300px] lg:auto-rows-[350px]"
-          >
+          <AnimatePresence initial={false}>
             {categories.map((cat, idx) => {
-              const gridClass = getGridClass(idx);
-              const isLarge = gridClass.includes("col-span-2");
+              const styles = getCardStyles(idx);
+              const isActive = idx === activeIndex;
 
               return (
-                <motion.div key={cat.documentId || cat.id} variants={itemVariants} className={gridClass}>
+                <motion.div 
+                  key={cat._id} 
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.2}
+                  onDragEnd={handleDragEnd}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ 
+                    x: styles.x, 
+                    scale: styles.scale, 
+                    zIndex: styles.zIndex, 
+                    opacity: styles.opacity,
+                    rotateY: styles.rotateY
+                  }}
+                  transition={{ type: "spring", stiffness: 200, damping: 25, mass: 1 }}
+                  className="absolute w-[80vw] sm:w-100 md:w-112.5 h-100 lg:h-125 rounded-[2.5rem] cursor-grab active:cursor-grabbing origin-center"
+                >
                   <Link 
                     href={`/products?category=${encodeURIComponent(cat.Name)}`} 
-                    className="group relative block w-full h-full overflow-hidden rounded-[2.5rem] bg-zinc-100 shadow-sm hover:shadow-2xl transition-all duration-700"
+                    onClick={(e) => {
+                      // If the card is not active, prevent navigation and pull it to the front instead
+                      if (!isActive) {
+                        e.preventDefault();
+                        setActiveIndex(idx);
+                      }
+                    }}
+                    className={`group relative block w-full h-full overflow-hidden rounded-[2.5rem] bg-zinc-900 shadow-2xl transition-all duration-500 isolate ${isActive ? 'ring-4 ring-white ring-offset-4 ring-offset-zinc-50' : ''}`}
                   >
-                    {/* Background Image */}
                     <Image 
-                      src={getStrapiMedia(cat.CatImage)} 
+                      src={cat.CatImage || "/placeholder-category.jpg"} 
                       alt={cat.Name} 
-                      fill 
-                      className="object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-110" 
+                      fill
+                      sizes="(max-width: 640px) 85vw, 450px"
+                      className="object-cover transition-transform duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:scale-105 pointer-events-none" 
                     />
                     
-                    {/* Elegant Gradient Overlays */}
-                    <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-700" />
+                    <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/40 to-transparent opacity-80" />
                     
-                    {/* Content Overlay */}
-                    <div className="absolute inset-0 p-8 md:p-10 flex flex-col justify-between z-20">
+                    <div className={`absolute inset-0 p-8 flex flex-col justify-between z-20 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-40'}`}>
                       
-                      {/* Top: Icon & Arrow */}
                       <div className="flex justify-between items-start">
                         <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white transition-all duration-500 group-hover:bg-orange-600 group-hover:border-orange-500 group-hover:scale-110 group-hover:-rotate-12 shadow-lg">
                           {getIcon(cat.Name)}
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500 ease-out">
-                          <ArrowUpRight size={20} />
-                        </div>
+                        {isActive && (
+                          <div className="h-12 w-12 rounded-full bg-white text-zinc-900 flex items-center justify-center transition-transform duration-500 ease-out shadow-xl">
+                            <ArrowUpRight size={20} />
+                          </div>
+                        )}
                       </div>
 
-                      {/* Bottom: Text Content */}
-                      <div className="translate-y-6 group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
-                        <h4 className={`${isLarge ? 'text-5xl lg:text-6xl' : 'text-3xl lg:text-4xl'} font-black uppercase tracking-tighter text-white mb-3 leading-none drop-shadow-md`}>
+                      <div className="translate-y-2 group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]">
+                        <h4 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter text-white mb-3 leading-none drop-shadow-md">
                           {cat.Name}
                         </h4>
                         
-                        {/* Hidden Reveal Link */}
-                        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-                          <div className="h-px w-8 bg-orange-500" />
+                        <div className={`flex items-center gap-3 transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                          <div className="h-0.5 w-8 bg-orange-500" />
                           <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400">
                             Explore Collection
                           </span>
@@ -174,7 +226,7 @@ export default function Portfolio() {
                 </motion.div>
               );
             })}
-          </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </section>

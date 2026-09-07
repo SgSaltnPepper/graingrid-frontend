@@ -1,11 +1,10 @@
 import React from "react";
-import RecentProduct from "../components/layout/RecentProduct";
-import Hero from "../components/layout/Hero";
-import Portfolio from "../components/layout/Portfolio";
-import TestimonialsSection from "../components/layout/TestimonialsSection";
-import FeaturesBar from "../components/layout/FeaturesBar";
-import Reveal from "../components/ui/Reveal";
-
+import RecentProducts from "@/app/components/layout/RecentProduct"; 
+import Hero from "@/app/components/layout/Hero";
+import Portfolio from "@/app/components/layout/Portfolio";
+import TestimonialsSection from "@/app/components/layout/TestimonialsSection";
+import FeaturesBar from "@/app/components/layout/FeaturesBar";
+import Reveal from "@/app/components/ui/Reveal";
 export const dynamic = 'force-static';
 
 const Home = async () => {
@@ -17,7 +16,7 @@ const Home = async () => {
       </Reveal>
 
       <Reveal>
-      <RecentProduct />
+      <RecentProducts />
       </Reveal>
 
       <Reveal>

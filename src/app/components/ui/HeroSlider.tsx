@@ -1,182 +1,218 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getStrapiMedia } from "@/lib/strapi";
-import { MoveRight } from "lucide-react";
-import gsap from "gsap";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
-export default function HeroSlider({ products }: { products: any[] }) {
-  const [current, setCurrent] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+export interface MappedProduct {
+  id: string | number;
+  _id: string;
+  Name: string;
+  Price: number;
+  Image?: string;
+  variants?: { Description?: string }[];
+  [key: string]: unknown;
+}
 
-  const nextSlide = useCallback(() => {
-    if (isAnimating) return;
-    setCurrent((prev) => (prev === products.length - 1 ? 0 : prev + 1));
-  }, [products.length, isAnimating]);
+// Strictly typed easing curve for Framer Motion to prevent TypeScript errors
+const sliderEase: [number, number, number, number] = [0.76, 0, 0.24, 1];
+const microEase: [number, number, number, number] = [0.25, 1, 0.5, 1];
 
-  // GSAP Cinematic Clip-Path Transitions
-  useEffect(() => {
-    setIsAnimating(true);
-    const ctx = gsap.context(() => {
-      const slides = gsap.utils.toArray(".slide-container");
-      const currentSlide = slides[current] as HTMLElement;
-      
-      // Reset all slides z-index
-      gsap.set(slides, { zIndex: 0 });
-      gsap.set(currentSlide, { zIndex: 10 });
+export default function HeroSlider({ products = [] }: { products?: MappedProduct[] }) {
+  const [[page, direction], setPage] = useState([0, 0]);
 
-      // 1. Cinematic Wipe (Curtain Reveal)
-      gsap.fromTo(
-        currentSlide,
-        { clipPath: "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)" },
-        { 
-          clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)", 
-          duration: 1.6, 
-          ease: "power4.inOut" 
-        }
-      );
+  // Guard clause to prevent undefined length errors
+  if (!products || products.length === 0) return null;
 
-      // 2. Image Slow Zoom (Ken Burns effect)
-      const img = currentSlide.querySelector(".slide-image");
-      gsap.fromTo(
-        img,
-        { scale: 1.3 },
-        { scale: 1, duration: 2, ease: "power3.out" }
-      );
+  const activeIndex = ((page % products.length) + products.length) % products.length;
 
-      // 3. Staggered Text Mask Reveal
-      const textLines = currentSlide.querySelectorAll(".hero-text-line");
-      gsap.fromTo(
-        textLines,
-        { y: 100, opacity: 0, rotateX: 15 },
-        { 
-          y: 0, 
-          opacity: 1, 
-          rotateX: 0, 
-          duration: 1.2, 
-          stagger: 0.1, 
-          ease: "expo.out", 
-          delay: 0.6 
-        }
-      );
+  const paginate = (newDirection: number) => {
+    setPage([page + newDirection, newDirection]);
+  };
 
-      // 4. Elements Fade In
-      const elements = currentSlide.querySelectorAll(".hero-element");
-      gsap.fromTo(
-        elements,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 1, stagger: 0.1, ease: "power2.out", delay: 1, onComplete: () => setIsAnimating(false) }
-      );
+  // --- Animation Variants ---
+  
+  // Left Panel (Image): Moves DOWN when advancing
+  const leftPanelVariants: Variants = {
+    enter: (dir: number) => ({ y: dir > 0 ? "-100%" : "100%" }),
+    center: { y: "0%", zIndex: 1, transition: { duration: 1.2, ease: sliderEase } },
+    exit: (dir: number) => ({ y: dir > 0 ? "100%" : "-100%", zIndex: 0, transition: { duration: 1.2, ease: sliderEase } })
+  };
 
-      // 5. Progress Line
-      gsap.fromTo(
-        `.progress-line-${current}`,
-        { scaleX: 0 },
-        { scaleX: 1, duration: 6, ease: "none" }
-      );
+  // Right Panel (Text Container): Moves UP when advancing
+  const rightPanelVariants: Variants = {
+    enter: (dir: number) => ({ y: dir > 0 ? "100%" : "-100%" }),
+    center: { 
+      y: "0%", 
+      zIndex: 1,
+      transition: { 
+        duration: 1.2, 
+        ease: sliderEase,
+        staggerChildren: 0.1, 
+        delayChildren: 0.3 
+      }
+    },
+    exit: (dir: number) => ({ y: dir > 0 ? "-100%" : "100%", zIndex: 0, transition: { duration: 1.2, ease: sliderEase } })
+  };
 
-    }, sliderRef);
+  // Staggered Text Micro-interactions
+  const textChildVariants: Variants = {
+    enter: { opacity: 0, y: 40, filter: "blur(8px)" },
+    center: { 
+      opacity: 1, 
+      y: 0, 
+      filter: "blur(0px)",
+      transition: { duration: 1, ease: microEase }
+    },
+    exit: { opacity: 0, y: -20, filter: "blur(4px)", transition: { duration: 0.4 } }
+  };
 
-    return () => ctx.revert();
-  }, [current]);
-
-  useEffect(() => {
-    intervalRef.current = setInterval(nextSlide, 6000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [nextSlide]);
-
-  if (!products?.length) return null;
+  // Image Parallax Scaling
+  const imageVariants: Variants = {
+    enter: (dir: number) => ({ scale: 1.3, y: dir > 0 ? "-10%" : "10%", opacity: 0 }),
+    center: { 
+      scale: 1, 
+      y: "0%", 
+      opacity: 1, 
+      transition: { duration: 1.4, ease: microEase } 
+    },
+    exit: (dir: number) => ({ scale: 1.1, y: dir > 0 ? "10%" : "-10%", opacity: 0, transition: { duration: 0.8 } })
+  };
 
   return (
-    <section ref={sliderRef} className="relative h-[90vh] lg:h-[95vh] w-full bg-zinc-950 overflow-hidden">
+    <section className="relative w-full h-[85vh] lg:h-screen flex flex-col lg:flex-row overflow-hidden bg-zinc-950">
       
-      {products.map((item, index) => {
-        const imageUrl = getStrapiMedia(item.Image);
-        const descriptionText = typeof item.Description === 'string' 
-          ? item.Description 
-          : item.Description?.[0]?.children?.[0]?.text || "";
-
-        return (
-          <div
-            key={item.documentId || item.id}
-            className={`slide-container absolute inset-0 w-full h-full ${index === current ? 'pointer-events-auto' : 'pointer-events-none'}`}
-            style={{ clipPath: index === current ? "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)" : "polygon(0% 100%, 100% 100%, 100% 100%, 0% 100%)" }}
-          >
-            {/* Image & Overlays */}
-            <div className="absolute inset-0">
-              <Image
-                src={imageUrl}
-                alt={item.Name}
-                fill
-                priority={index === 0}
-                className="slide-image object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-linear-to-r from-zinc-950/90 via-zinc-950/40 to-transparent" />
-              <div className="absolute inset-0 bg-linear-to-t from-zinc-950/80 via-transparent to-transparent" />
-              <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-            </div>
-
-            {/* Content Content */}
-            <div className="absolute bottom-0 left-0 w-full px-6 pb-24 lg:px-16 lg:pb-32 z-20">
-              <div className="max-w-5xl">
-                
-                {/* Badge */}
-                <div className="hero-element mb-8 flex items-center gap-4 overflow-hidden">
-                  <div className="h-px w-16 bg-orange-500" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-orange-400 bg-orange-500/10 px-4 py-2 rounded-full backdrop-blur-md border border-orange-500/20">
-                    {item.categories?.[0]?.Name || "Featured"}
-                  </span>
-                </div>
-
-                {/* Title (Masked lines for smooth reveal) */}
-                <h1 className="flex flex-col gap-2 text-5xl font-black uppercase tracking-tighter text-white sm:text-7xl lg:text-[7vw] leading-[0.85] mb-8">
-                  {item.Name.split(' ').map((word: string, i: number) => (
-                    <div key={i} className="overflow-hidden py-1">
-                      <span className="hero-text-line block">
-                        {word === "Premium" ? <span className="text-transparent bg-clip-text bg-linear-to-r from-orange-400 to-amber-600 italic font-serif lowercase pr-4">{word}</span> : word}
-                      </span>
-                    </div>
-                  ))}
-                </h1>
-
-                {/* Glassmorphism Info Box */}
-                <div className="hero-element flex flex-col md:flex-row gap-8 items-start md:items-center bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl max-w-3xl">
-                    <p className="text-sm md:text-base font-medium leading-relaxed text-zinc-300 flex-1">
-                        {descriptionText.length > 120 ? descriptionText.substring(0, 120) + "..." : descriptionText}
-                    </p>
-                    <Link
-                        href={`/products/${item.documentId || item.id}`}
-                        className="group flex items-center gap-4 rounded-full bg-white px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-950 transition-all hover:bg-orange-600 hover:text-white shrink-0 shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-                    >
-                        Explore <MoveRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                    </Link>
-                </div>
-
+      {/* --- SPLIT LINE THUMBNAILS --- */}
+      {/* Positioned exactly on the center line overlapping both halves */}
+      <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex-col gap-5 mix-blend-normal">
+        {products.map((p, idx) => {
+          const isActive = idx === activeIndex;
+          return (
+            <button
+              key={p._id}
+              onClick={() => {
+                const newDir = idx > activeIndex ? 1 : -1;
+                if (!isActive) setPage([idx, newDir]);
+              }}
+              className={`relative rounded-full transition-all duration-700 ease-[cubic-bezier(0.76,0,0.24,1)] flex items-center justify-center
+                ${isActive ? 'w-16 h-16 shadow-2xl' : 'w-10 h-10 opacity-50 hover:opacity-100 hover:scale-110 cursor-pointer shadow-md'}
+              `}
+            >
+              {/* Active Outline Ring (Fixed Tailwind syntax) */}
+              <div className={`absolute -inset-1.5 rounded-full border-2 border-orange-500 transition-all duration-700 ${isActive ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`} />
+              
+              <div className="w-full h-full relative rounded-full overflow-hidden border-2 border-white/80 bg-zinc-200">
+                <Image 
+                  src={p.Image || '/placeholder-product.jpg'} 
+                  alt={p.Name} 
+                  fill 
+                  sizes="64px"
+                  className="object-cover" 
+                />
               </div>
-            </div>
-          </div>
-        );
-      })}
-
-      {/* --- PREMIUM SLIDER NAVIGATION --- */}
-      <div className="absolute bottom-8 right-6 lg:right-16 z-30 flex items-center gap-6">
-        {products.map((_, i) => (
-          <div key={i} className="flex items-center gap-3 cursor-pointer group" onClick={() => setCurrent(i)}>
-            <span className={`text-[10px] font-black transition-colors duration-300 ${i === current ? 'text-white' : 'text-zinc-600 group-hover:text-zinc-400'}`}>
-                0{i + 1}
-            </span>
-            <div className="relative h-px w-16 bg-white/20 overflow-hidden">
-                <div className={`progress-line-${i} absolute inset-0 bg-orange-500 origin-left ${i === current ? 'scale-x-100' : 'scale-x-0'}`} />
-            </div>
-          </div>
-        ))}
+            </button>
+          );
+        })}
       </div>
+
+      {/* --- LEFT SIDE: FULL VIEW IMAGE CONTAINER --- */}
+      <div className="relative w-full lg:w-1/2 h-[45%] lg:h-full overflow-hidden bg-zinc-900">
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={page}
+            custom={direction}
+            variants={leftPanelVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 w-full h-full"
+          >
+            {/* Full Bleed Image Container with Parallax */}
+            <motion.div 
+              variants={imageVariants}
+              className="relative w-full h-full overflow-hidden"
+            >
+              <Image
+                src={products[activeIndex].Image || "/placeholder-product.jpg"}
+                alt={products[activeIndex].Name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-center" 
+                priority
+              />
+              {/* Subtle overlay to blend raw images seamlessly */}
+              <div className="absolute inset-0 bg-zinc-950/20 mix-blend-multiply" />
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* --- RIGHT SIDE: TEXT CONTAINER (GrainGrid Theme) --- */}
+      <div className="relative w-full lg:w-1/2 h-[55%] lg:h-full overflow-hidden bg-zinc-50">
+        
+        {/* Navigation Arrows */}
+        <div className="absolute right-6 lg:right-12 bottom-6 lg:bottom-12 z-50 flex flex-col gap-3">
+          <button 
+            onClick={() => paginate(-1)} 
+            className="w-12 h-12 flex items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 hover:text-orange-600 hover:border-orange-200 transition-all active:scale-90 shadow-sm"
+          >
+            <ArrowUp size={22} strokeWidth={1.5} />
+          </button>
+          <button 
+            onClick={() => paginate(1)} 
+            className="w-12 h-12 flex items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-400 hover:text-orange-600 hover:border-orange-200 transition-all active:scale-90 shadow-sm"
+          >
+            <ArrowDown size={22} strokeWidth={1.5} />
+          </button>
+        </div>
+
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={page}
+            custom={direction}
+            variants={rightPanelVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="absolute inset-0 flex flex-col justify-center px-8 sm:px-12 lg:pl-32 lg:pr-40"
+          >
+            {/* Index Counter (Fixed Tailwind syntax) */}
+            <motion.div variants={textChildVariants} className="flex items-center gap-3 mb-6 lg:mb-10 text-xs font-bold tracking-widest text-zinc-400">
+              <span className="text-zinc-900">
+                {String(activeIndex + 1).padStart(2, '0')}
+              </span>
+              <span className="w-8 h-px bg-zinc-300 -rotate-45 origin-center" />
+              <span>
+                {String(products.length).padStart(2, '0')}
+              </span>
+            </motion.div>
+
+            {/* Title */}
+            <motion.h1 variants={textChildVariants} className="text-4xl sm:text-5xl lg:text-[4.5rem] font-black uppercase tracking-tighter text-zinc-950 mb-6 leading-[0.95]">
+              {products[activeIndex].Name}
+            </motion.h1>
+
+            {/* Description */}
+            <motion.p variants={textChildVariants} className="text-zinc-500 leading-relaxed mb-10 max-w-md text-sm lg:text-base font-medium">
+              {products[activeIndex].variants?.[0]?.Description || 
+                "Our signature selection is meticulously sourced and processed to ensure the highest quality standards. Featuring distinct flavor profiles perfect for home consumption and global retail."}
+            </motion.p>
+
+            {/* CTA Button */}
+            <motion.div variants={textChildVariants}>
+              <Link 
+                href={`/products/${products[activeIndex]._id}`} 
+                className="inline-flex items-center justify-center bg-zinc-950 hover:bg-orange-600 text-white px-8 lg:px-10 py-4 lg:py-5 text-[10px] lg:text-xs font-black uppercase tracking-[0.25em] transition-all duration-300 hover:shadow-2xl hover:shadow-orange-600/20 active:scale-95"
+              >
+                Explore Details
+              </Link>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      
     </section>
   );
 }

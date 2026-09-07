@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Jost } from "next/font/google";
-import "./globals.css";
-import Navbar from "./components/layout/Navbar"; 
-import Footer from "./components/layout/Footer";
-import ScrollProvider from "./components/providers/ScrollProviders";
+
+// Replaced relative paths (./) with absolute alias paths (@/app/)
+import "@/app/globals.css";
+import Navbar from "@/app/components/layout/Navbar"; 
+import Footer from "@/app/components/layout/Footer";
+import ScrollProvider from "@/app/components/providers/ScrollProviders";
 
 // 1. Optimize Font Loading
 const jost = Jost({

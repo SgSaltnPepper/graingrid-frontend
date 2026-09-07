@@ -3,10 +3,17 @@
 import LinkNext from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { getCategories, type StrapiCategory } from "@/lib/strapi";
+import { getCategories } from "@/sanity/lib/queries";
 import { Menu, X, ChevronRight, ArrowRight } from "lucide-react";
 import { FaInstagram, FaTwitter, FaLinkedin } from "react-icons/fa6";
 import gsap from "gsap";
+
+export interface SanityCategory {
+  _id: string;
+  Name: string;
+  CatImage?: string;
+  subcategories?: SanityCategory[];
+}
 
 const ABOUT_DROPDOWN = [
   { label: "Company Overview", href: "/about/company-overview" },
@@ -27,16 +34,26 @@ export default function Navbar() {
   const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
 
-  const [categories, setCategories] = useState<StrapiCategory[]>([]);
+  const [categories, setCategories] = useState<SanityCategory[]>([]);
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const mobileOverlayRef = useRef<HTMLDivElement>(null);
 
-  // Fetch only top-level categories
+  // Safely close menus on route change during the render phase (fixes ESLint warning)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+    setProductsHover(false);
+    setAboutHover(false);
+    setMobileProductsOpen(false);
+    setMobileAboutOpen(false);
+  }
+
+  // Fetch only top-level categories using Sanity
   useEffect(() => {
     async function loadData() {
       try {
         const catData = await getCategories();
-        // Since getCategories already filters by parent=null, these are the main ones
         setCategories(catData || []);
       } catch (error) {
         console.error("Navbar data fetch failed:", error);
@@ -67,15 +84,6 @@ export default function Navbar() {
     return () => ctx.revert();
   }, [open]);
 
-  // Close menus on route change
-  useEffect(() => { 
-    setOpen(false); 
-    setProductsHover(false);
-    setAboutHover(false);
-    setMobileProductsOpen(false);
-    setMobileAboutOpen(false);
-  }, [pathname]);
-
   return (
     <>
       {/* --- DESKTOP FLOATING NAVBAR --- */}
@@ -102,94 +110,94 @@ export default function Navbar() {
             {/* Main Links */}
             <div className="hidden lg:flex items-center gap-10">
                <ul className="flex items-center gap-10">
-                  
-                  {/* Home */}
-                  <li className="relative py-2">
-                      <LinkNext href="/" className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname === '/' ? "text-orange-600" : "text-zinc-600"}`}>
-                        Home
-                      </LinkNext>
-                  </li>
+                 
+                 {/* Home */}
+                 <li className="relative py-2">
+                     <LinkNext href="/" className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname === '/' ? "text-orange-600" : "text-zinc-600"}`}>
+                       Home
+                     </LinkNext>
+                 </li>
 
-                  {/* Products (Hover Trigger) */}
-                  <li 
-                    className="relative py-2 group"
-                    onMouseEnter={() => setProductsHover(true)}
-                    onMouseLeave={() => setProductsHover(false)}
-                  >
-                      <LinkNext 
-                          href="/products" 
-                          className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname.startsWith('/products') ? "text-orange-600" : "text-zinc-600"}`}
-                      >
-                        Products
-                      </LinkNext>
+                 {/* Products (Hover Trigger) */}
+                 <li 
+                   className="relative py-2 group"
+                   onMouseEnter={() => setProductsHover(true)}
+                   onMouseLeave={() => setProductsHover(false)}
+                 >
+                     <LinkNext 
+                         href="/products" 
+                         className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname.startsWith('/products') ? "text-orange-600" : "text-zinc-600"}`}
+                     >
+                       Products
+                     </LinkNext>
 
-                      {/* Dropdown Card */}
-                      <div 
-                        className={`absolute top-full left-1/2 -translate-x-1/2 pt-6 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                          productsHover ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-4 scale-95"
-                        }`}
-                      >
-                        <div className="w-125 bg-white border border-zinc-100 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] rounded-3xl p-8 overflow-hidden relative">
-                          <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-orange-400 to-amber-500"></div>
-                          
-                          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6 border-b border-zinc-100 pb-3">Main Categories</h3>
-                          
-                          {/* Only Main Categories */}
-                          <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                              {categories.map((cat) => (
-                                  <LinkNext 
-                                      key={cat.id}
-                                      href={`/products?category=${cat.Name}`}
-                                      className="group flex items-center justify-between p-3 rounded-xl hover:bg-orange-50 transition-colors"
-                                  >
-                                      <span className="text-sm font-bold tracking-wide text-zinc-800 group-hover:text-orange-600 transition-colors">
-                                        {cat.Name}
-                                      </span>
-                                      <ArrowRight size={14} className="opacity-0 -translate-x-2 text-orange-600 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
-                                  </LinkNext>
-                              ))}
-                          </div>
-                        </div>
-                      </div>
-                  </li>
+                     {/* Dropdown Card */}
+                     <div 
+                       className={`absolute top-full left-1/2 -translate-x-1/2 pt-6 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                         productsHover ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-4 scale-95"
+                       }`}
+                     >
+                       <div className="w-125 bg-white border border-zinc-100 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] rounded-3xl p-8 overflow-hidden relative">
+                         <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-orange-400 to-amber-500"></div>
+                         
+                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6 border-b border-zinc-100 pb-3">Main Categories</h3>
+                         
+                         {/* Only Main Categories */}
+                         <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                             {categories.map((cat) => (
+                                 <LinkNext 
+                                     key={cat._id}
+                                     href={`/products?category=${cat.Name}`}
+                                     className="group flex items-center justify-between p-3 rounded-xl hover:bg-orange-50 transition-colors"
+                                 >
+                                     <span className="text-sm font-bold tracking-wide text-zinc-800 group-hover:text-orange-600 transition-colors">
+                                       {cat.Name}
+                                     </span>
+                                     <ArrowRight size={14} className="opacity-0 -translate-x-2 text-orange-600 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
+                                 </LinkNext>
+                             ))}
+                         </div>
+                       </div>
+                     </div>
+                 </li>
 
-                  {/* About Us (Hover Trigger) */}
-                  <li 
-                    className="relative py-2 group"
-                    onMouseEnter={() => setAboutHover(true)}
-                    onMouseLeave={() => setAboutHover(false)}
-                  >
-                      <button className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname.startsWith('/about') ? "text-orange-600" : "text-zinc-600"}`}>
-                        About Us
-                      </button>
+                 {/* About Us (Hover Trigger) */}
+                 <li 
+                   className="relative py-2 group"
+                   onMouseEnter={() => setAboutHover(true)}
+                   onMouseLeave={() => setAboutHover(false)}
+                 >
+                     <button className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname.startsWith('/about') ? "text-orange-600" : "text-zinc-600"}`}>
+                       About Us
+                     </button>
 
-                      {/* Dropdown Card */}
-                      <div 
-                        className={`absolute top-full left-1/2 -translate-x-1/2 pt-6 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
-                          aboutHover ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-4 scale-95"
-                        }`}
-                      >
-                        <div className="w-64 bg-white border border-zinc-100 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] rounded-3xl p-3 overflow-hidden relative">
-                          <div className="absolute top-0 inset-x-0 h-1 bg-zinc-900"></div>
-                          {ABOUT_DROPDOWN.map((item) => (
-                            <LinkNext 
-                              key={item.href}
-                              href={item.href}
-                              className="block px-5 py-4 text-xs font-bold text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50 rounded-2xl transition-colors"
-                            >
-                              {item.label}
-                            </LinkNext>
-                          ))}
-                        </div>
-                      </div>
-                  </li>
+                     {/* Dropdown Card */}
+                     <div 
+                       className={`absolute top-full left-1/2 -translate-x-1/2 pt-6 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+                         aboutHover ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-4 scale-95"
+                       }`}
+                     >
+                       <div className="w-64 bg-white border border-zinc-100 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] rounded-3xl p-3 overflow-hidden relative">
+                         <div className="absolute top-0 inset-x-0 h-1 bg-zinc-900"></div>
+                         {ABOUT_DROPDOWN.map((item) => (
+                           <LinkNext 
+                             key={item.href}
+                             href={item.href}
+                             className="block px-5 py-4 text-xs font-bold text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50 rounded-2xl transition-colors"
+                           >
+                             {item.label}
+                           </LinkNext>
+                         ))}
+                       </div>
+                     </div>
+                 </li>
 
-                  {/* Contact */}
-                  <li className="relative py-2">
-                      <LinkNext href="/contact" className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname === '/contact' ? "text-orange-600" : "text-zinc-600"}`}>
-                        Contact
-                      </LinkNext>
-                  </li>
+                 {/* Contact */}
+                 <li className="relative py-2">
+                     <LinkNext href="/contact" className={`text-[10px] font-black uppercase tracking-[0.25em] transition-all hover:text-orange-600 ${pathname === '/contact' ? "text-orange-600" : "text-zinc-600"}`}>
+                       Contact
+                     </LinkNext>
+                 </li>
                </ul>
             </div>
 
@@ -238,7 +246,7 @@ export default function Navbar() {
                     <div className="flex flex-col gap-6 pl-4 border-l-2 border-zinc-800 py-2">
                         {categories.map((cat) => (
                             <LinkNext 
-                                key={cat.id}
+                                key={cat._id}
                                 href={`/products?category=${cat.Name}`}
                                 className="text-xl font-bold uppercase tracking-tight text-zinc-400 hover:text-white transition-colors"
                             >
